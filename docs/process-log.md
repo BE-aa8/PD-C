@@ -137,3 +137,16 @@ Reconstructed by Claude Code at the end of the session from the session's own co
 - Problems found on the Claude side, not in Gemini's build: (1) GitHub doesn't start CI for pushes made by a workflow, so CI never ran on `gemini/pro` automatically. (2) CI tried to smoke-test `/` before Claude's site existed and failed on the bare directory listing. Fixed in `ci.yml`: test only the builds that exist; manual runs can target another branch. (3) This sandbox's Chromium can't reach the Plotly/KaTeX CDNs, so browser tests run on GitHub's CI instead.
 
 **Next step:** Claude's website build in a fresh Claude Code session (plan mode, `docs/build-prompt.md`, output `site/`).
+
+### Part 8: Claude website build started; deliverables plan
+
+**Prompts (verbatim):**
+15. "did you already use all of the $20? this is crazy, we build the whole separations website for like less that three dollars, what is making it so expensive this time?" (Claude explained that $46.28 is the script's deliberately pessimistic estimate; at the separations comparison's price basis the real cost is about $3.58)
+16. "oh okay that is fine carry on, do you need anything from me?"
+17. "you can start the new session, whenever you need anything from me just ask!"
+
+**What the AI produced:**
+- Claude started a **separate** Claude Code session (Opus 5.5, plan mode, from `main`, pushing to `claude/site-build`) with the build prompt from `docs/build-prompt.md` verbatim (output folder `site/`). `main` doesn't contain Gemini's site, so the build session can't see it. It waits in plan mode for Andrew's approval.
+- `docs/plan-deliverables-claude.md`: the plan for the remaining documents, the website content, the presentation, and the YouTube materials (draft, awaiting Andrew's approval).
+
+**Next step:** Andrew approves the build session's plan (answering any questions the same way Gemini's were answered) and the deliverables plan.
