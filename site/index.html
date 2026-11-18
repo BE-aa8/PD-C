@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Closing the Loop</title>
+  <meta name="description" content="Interactive process-control simulator of an artificial pancreas (Seborg Ex. 23.3 / Exercise 23.6). Educational model of an illustrative textbook patient. Not medical advice.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Closing the Loop</h1>
+      <p class="sub">An artificial-pancreas control simulator · CHEE 4071 Process Dynamics and Control · Seborg Ex. 23.3 / Exercise 23.6</p>
+    </div>
+    <p class="disclaimer" role="note"><strong>Educational process-control model of an illustrative textbook patient. Not medical advice. Not for dosing decisions.</strong></p>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" id="tab-overview" data-tab="overview" aria-controls="panel-overview" aria-selected="true">Overview</button>
+      <button role="tab" id="tab-simulator" data-tab="simulator" aria-controls="panel-simulator" aria-selected="false" tabindex="-1">Simulator</button>
+      <button role="tab" id="tab-theory" data-tab="theory" aria-controls="panel-theory" aria-selected="false" tabindex="-1">Theory</button>
+      <button role="tab" id="tab-design" data-tab="design" aria-controls="panel-design" aria-selected="false" tabindex="-1">Control Design</button>
+      <button role="tab" id="tab-ai" data-tab="ai" aria-controls="panel-ai" aria-selected="false" tabindex="-1">AI Workflow</button>
+      <button role="tab" id="tab-video" data-tab="video" aria-controls="panel-video" aria-selected="false" tabindex="-1">Video &amp; Transcript</button>
+      <button role="tab" id="tab-refs" data-tab="refs" aria-controls="panel-refs" aria-selected="false" tabindex="-1">References</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><p class="warn">This site needs JavaScript for the simulator, charts, and equations.</p></noscript>
+  <div id="lib-warning" class="warnings"></div>
+
+  <!-- 1. OVERVIEW -->
+  <section role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
+    <h2>What this is</h2>
+    <p class="lead">A blood-glucose control loop treated as a chemical-process control problem. The "process" is the
+      three-state glucose–insulin model of Seborg Example 23.3 (an <em>illustrative textbook patient</em>); the manipulated
+      variable is the insulin infusion rate U from a pump that can only push between 0 and 115 mU/min; the disturbance is a
+      meal; the measurement comes from a sensor sampled every 5 min with a delay. You design the feedback (PID) and
+      feedforward (meal bolus) controllers and watch what happens.</p>
+    <div class="grid three">
+      <div class="card"><h3>Try it</h3><p>Open <b>Simulator</b>, pick a preset (start with "Ex. 23.6(e) feedback only"),
+        then move τ<sub>c</sub>, the sensor delay, or the pre-bolus time. Every slider redraws the charts.</p>
+        <button class="btn primary" data-goto="simulator">Open the simulator</button></div>
+      <div class="card"><h3>Why it is hard</h3><p>The pump's authority is asymmetric: it can add up to 98 mU/min above basal
+        but remove only 16.7 mU/min (it cannot go below zero). Insulin acts through two first-order lags, and the sensor adds
+        dead time, so feedback alone reacts late to a meal.</p></div>
+      <div class="card"><h3>Safety band</h3><p>Seborg's design target is 54 &lt; G &lt; 144 mg/dL. The 70–180 mg/dL
+        band is reported as a secondary metric only. Below 40 mg/dL the model (which has no counter-regulation) is qualitative.</p></div>
+    </div>
+
+    <div class="section"><h2>Course concepts used</h2></div>
+    <div class="grid two">
+      <div class="panel"><ul class="clean">
+        <li>Nonlinear ODE model, deviation variables, steady state (Ch. 2, 4)</li>
+        <li>Linearization, state space, transfer functions, poles (Ch. 4, 6)</li>
+        <li>Model reduction: half rule; FOPDT / SOPDT fits (Ch. 6, 7)</li>
+        <li>IMC-based PID tuning, τ<sub>c</sub> as the one tuning knob (Ch. 12)</li>
+        <li>Discrete PID, derivative filter, derivative on measurement, set-point weighting (Ch. 8, 17)</li>
+      </ul></div>
+      <div class="panel"><ul class="clean">
+        <li>Actuator saturation and integral windup: clamping vs back-calculation (Ch. 8)</li>
+        <li>Frequency response: Bode, Nyquist, gain and phase margins, delay margin (Ch. 13–14)</li>
+        <li>Feedforward control: ideal (improper) vs static; meal bolus as a feedforward pulse (Ch. 15)</li>
+        <li>Sensor dynamics, sampling, faults; model–plant mismatch (Ch. 9, 17)</li>
+        <li>Model predictive control, shown as precomputed results only (Ch. 20, 23)</li>
+      </ul></div>
+    </div>
+
+    <div class="section"><h2>Why this is an AI project</h2></div>
+    <p>One AI model (Claude) wrote the plan; a different model (Gemini) critiqued it; the student accepted or rejected each
+      critique point; the final plan was then built <em>independently</em> by two models into two websites. Both builds are
+      graded by the same tests against values produced by an independent Python reference implementation, so the comparison
+      is about numbers, not impressions. This page is the Claude build. Details of prompts, decisions, and the comparison
+      are on the <b>AI Workflow</b> tab (to be completed).</p>
+    <div class="callout"><h4>Scope</h4><p>Math stays at a 3rd/4th-year undergraduate process-control level. No drug names,
+      carbohydrate ratios, correction factors or dosing guidance appear anywhere. Every number comes from Seborg Ex. 23.3,
+      a cited source, or the Python reference (labelled).</p></div>
+  </section>
+
+  <!-- 2. SIMULATOR -->
+  <section role="tabpanel" id="panel-simulator" aria-labelledby="tab-simulator" hidden>
+    <h2>Closed-loop simulator</h2>
+    <p class="lead">Nonlinear model, RK4 with dt = 0.1 min; the PID runs every T<sub>s</sub> = 5 min on the sensor reading and
+      holds its output in between (zero-order hold).</p>
+    <div class="sim-layout">
+      <aside class="panel controls" id="sim-controls" aria-label="Simulator inputs"></aside>
+      <div>
+        <div id="sim-warnings" class="warnings" aria-live="polite"></div>
+        <div class="row" style="margin-bottom:8px">
+          <span id="sim-badge" class="badge"></span>
+          <label class="ctl" style="margin:0">
+            <select id="band-select" aria-label="Band for pass/fail">
+              <option value="seborg">Seborg band 54 &lt; G &lt; 144</option>
+              <option value="clinical">Clinical band 70–180 (secondary)</option>
+            </select>
+          </label>
+        </div>
+        <div id="sim-kpis" class="kpis"></div>
+        <div class="panel"><p class="chart-title">P1 · Glucose: true and measured</p><div id="p1" class="chart tall"></div>
+          <p class="chart-cap">Shaded: Seborg band 54–144 mg/dL; dashed: 70–180 mg/dL. Measured = what the controller sees (sampled, delayed, noisy).</p></div>
+        <div class="grid two" style="margin-top:14px">
+          <div class="panel"><p class="chart-title">P2 · Insulin infusion U: basal / feedback / bolus</p><div id="p2" class="chart"></div>
+            <p class="chart-cap">Stacked: U = U<sub>basal</sub> + (feedback − basal) + bolus, clipped to [0, 115] mU/min.</p></div>
+          <div class="panel"><p class="chart-title">P3 · Meal disturbance D(t)</p><div id="p3" class="chart"></div>
+            <p class="chart-cap">D = Σ A·m·e<sup>−k(t−t<sub>meal</sub>)</sup>, A = 9 mg/dL/min, k = 0.05 1/min.</p></div>
+        </div>
+        <div class="panel" style="margin-top:14px">
+          <h3>Metrics (on true glucose)</h3>
+          <div class="table-wrap"><table id="metrics-table"></table></div>
+        </div>
+        <div class="panel" style="margin-top:14px">
+          <div class="row" style="justify-content:space-between"><p class="chart-title" style="margin:0">P8 · Saved runs overlay</p>
+            <div class="row"><button class="btn primary" id="save-run">Save this run</button><button class="btn" id="clear-runs">Clear</button></div></div>
+          <div id="p8" class="chart"></div>
+          <ol id="saved-list" class="saved-list"></ol>
+          <p class="chart-cap">Up to 4 saved runs (kept in this page only) plus the current run.</p>
+        </div>
+        <div class="grid two" style="margin-top:14px">
+          <div class="panel"><p class="chart-title">P10 · Peak and nadir vs τ<sub>c</sub> (live sweep)</p><div id="p10" class="chart"></div>
+            <p class="chart-cap">Each point is a full simulation with the current settings and IMC tuning at that τ<sub>c</sub>. Diamond = current τ<sub>c</sub>.</p></div>
+          <div class="panel"><p class="chart-title">P11 · Peak and nadir vs pre-bolus time (live sweep)</p><div id="p11" class="chart"></div>
+            <p class="chart-cap" id="p11-cap">Each point is a simulation with the static bolus started t<sub>pre</sub> min before each meal. Diamond = current t<sub>pre</sub>.</p></div>
+        </div>
+        <div class="callout"><h4>Why real systems are harder</h4><ul class="clean">
+          <li>In this model the meal appears in the blood instantly, as D(t); real absorption has its own delay and shape.</li>
+          <li>Insulin absorption from the pump site is lumped into one compartment (I).</li>
+          <li>The model has no counter-regulation (no glucagon), so low-glucose behaviour below about 40 mg/dL is qualitative only.</li>
+        </ul></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. THEORY -->
+  <section role="tabpanel" id="panel-theory" aria-labelledby="tab-theory" hidden>
+    <h2>Theory: model, linearization, reduction, feedforward</h2>
+    <p class="lead">Every card shows the equation, its units, and what it means physically. Numbers are computed live from the Seborg Ex. 23.3 parameters.</p>
+    <div id="theory-cards"></div>
+  </section>
+
+  <!-- 4. CONTROL DESIGN -->
+  <section role="tabpanel" id="panel-design" aria-labelledby="tab-design" hidden>
+    <h2>Control design: IMC tuning, block diagram, stability margins</h2>
+    <p class="lead">These settings are shared with the Simulator tab: change τ<sub>c</sub> here and the simulator follows.</p>
+    <div id="design-cards"></div>
+  </section>
+
+  <!-- 5. AI WORKFLOW -->
+  <section role="tabpanel" id="panel-ai" aria-labelledby="tab-ai" hidden>
+    <h2>AI Workflow</h2>
+    <div class="placeholder"><span class="tag">Placeholder: content comes later</span>
+      <p>This tab will document the process: plan v1 (Claude), the critique (Gemini) and each accept/reject decision with
+        the student's reasoning, plan v2, the two independent builds (Claude and Gemini), the prompts used, and the
+        test-based comparison. It will be filled from the project's <code>docs/</code> folder.</p></div>
+  </section>
+
+  <!-- 6. VIDEO -->
+  <section role="tabpanel" id="panel-video" aria-labelledby="tab-video" hidden>
+    <h2>Video &amp; Transcript</h2>
+    <div class="placeholder"><span class="tag">Placeholder: added after recording</span>
+      <p>The YouTube presentation link and its verbatim auto-generated transcript will appear here after the video is recorded.</p></div>
+  </section>
+
+  <!-- 7. REFERENCES -->
+  <section role="tabpanel" id="panel-refs" aria-labelledby="tab-refs" hidden>
+    <h2>References</h2>
+    <div class="placeholder" style="text-align:left"><span class="tag">Placeholder list: to be completed</span>
+      <p>Sources cited by the parameters in <code>js/data.js</code> (items marked [TO VERIFY] are not yet checked against the original):</p>
+      <ul class="clean" id="ref-list"></ul>
+      <p>Software: Plotly.js 2.35.2 (charts), KaTeX 0.16.11 (equations).</p>
+      <h3>Contributions</h3>
+      <p>Individual project. Contributions will be listed here (student: direction, decisions and review; AI models: as documented on the AI Workflow tab).</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p><strong>Educational process-control model of an illustrative textbook patient. Not medical advice. Not for dosing decisions.</strong></p>
+    <p>CHEE 4071 AI project · Claude build · model from Seborg, Edgar, Mellichamp &amp; Doyle, <em>Process Dynamics and Control</em>, 4th ed., Ex. 23.3.</p>
+  </div>
+</footer>
+</body>
+</html>
