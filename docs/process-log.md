@@ -75,3 +75,22 @@ Reconstructed by Claude Code at the end of the session from the session's own co
 - Allowed Claude to push to `main`.
 
 **Next step:** paste `docs/gemini-critique-all-in-one.txt` into the Gemini web app and commit the reply verbatim as `docs/critique-v1-gemini.md`.
+
+### Part 4: Gemini critique and Claude's fact-checks
+
+**Prompts (verbatim):**
+9. "nice. thanks. can you put exactly what needs put into gemini into the chat please" (Claude printed the full contents of `docs/gemini-critique-all-in-one.txt`)
+10. Andrew pasted Gemini's full reply from the Gemini web app, with no other text.
+
+**What the AI produced:**
+- Gemini (web app; exact model name to be added by Andrew): an 11-finding critique plus answers to plan §19 Q1–Q7. Saved verbatim as `docs/critique-v1-gemini.md`.
+- Claude: fact-checked the checkable claims against the Python reference and drafted `docs/critique-decisions.md` (26 rows, each needing Andrew's decision).
+
+**Key fact-check results:**
+- **Gemini found a real bug that Claude's plan and code both missed:** setpoint weighting β was applied to absolute glucose. With β = 0.5 and no meal, the controller output starts at 33.9 instead of 16.7 mU/min, and glucose falls to 57 mg/dL from a resting steady state.
+- Gemini's back-calculation guard (Tt ≥ Ts) prevents a real divergence when τD is small (Ts/Tt > 2).
+- Gemini overstated one finding (it called the back-calculation formula an "algebraic error", though its own derivation shows it is correct), made two small arithmetic slips (Kp −4.505925 vs −4.506298; bolus 1390.13 vs 1390.09), and underestimated the D-hold error 12× (0.018 vs a measured 0.213 mg/dL).
+
+**What I accepted / changed / rejected, and why:** *(pending: Andrew's decisions go in `docs/critique-decisions.md`)*
+
+**Next step:** Andrew approves or changes each row; then Claude fixes the two reference bugs (rows 3 and 13) and writes plan v2.
