@@ -1,19 +1,12 @@
-## Available models (20261118T171355Z)
+## Gemini plan run 20261118T171557Z
 
-```
-npm warn deprecated @github/keytar@7.10.6: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
-Available Gemini Models:
+- Exit code: 0
+- Duration: 6 min 38 s
+- Models: gemini-3.8-flash, gemini-3-flash-preview
+- Tokens: {"gemini-3.8-flash": {"input": 135570, "prompt": 1645451, "candidates": 17278, "total": 1691282, "cached": 1509881, "thoughts": 28553, "tool": 0}, "gemini-3-flash-preview": {"input": 6377, "prompt": 6377, "candidates": 128, "total": 6832, "cached": 0, "thoughts": 327, "tool": 0}}
+- Tool calls: 39
+- Estimated cost (conservative): $7.44 this run, $7.44 total (time limit 10 min)
+- npm test after run: 1 passed, 0 failed
+- Files changed that this stage may not change (reverted): none
+- Response: `docs/gemini-build/run-20261118T171557Z-plan.response.md`
 
-auto (Auto)
-  Description:   Let Gemini CLI decide the best model for the task: gemini-2.5-pro, gemini-3.5-flash
-  Context limit: 1,048,576 input tokens / 8,192 output tokens
-
-gemini-2.5-pro (gemini-2.5-pro)
-  Context limit: 1,048,576 input tokens / 8,192 output tokens
-
-gemini-3.5-flash (gemini-3.5-flash)
-  Context limit: 1,048,576 input tokens / 8,192 output tokens
-
-gemini-3.1-flash-lite (gemini-3.1-flash-lite)
-  Context limit: 1,048,576 input tokens / 8,192 output tokens
-```
