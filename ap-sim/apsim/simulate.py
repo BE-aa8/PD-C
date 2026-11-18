@@ -120,7 +120,7 @@ def simulate(cfg: SimConfig) -> Result:
         pid = PID(cfg.pid, cfg.Ts, U_basal, U_lo, U_hi)
     elif cfg.controller == "mpc":
         from .mpc import MPC
-        mpc = MPC(cfg.mpc, p, cfg.Ts, cfg.sensor.delay, U_lo, U_hi)
+        mpc = MPC(cfg.mpc, p, cfg.Ts, cfg.sensor.delay, U_lo, U_hi, cfg.meals, cfg.ff)
     ff = Feedforward(cfg.ff, cfg.meals, p, dt)
     U_ol = U_basal if cfg.U_open_loop is None else cfg.U_open_loop
 
@@ -161,7 +161,8 @@ def simulate(cfg: SimConfig) -> Result:
             elif mpc is not None:
                 U_fb = mpc.update(sp, G_meas, t, ff)
         # 3. feedforward, 4. total input
-        U_ff = ff.step(t, U_fb)
+        # (with MPC, an announced meal enters the MPC prediction instead of a bolus)
+        U_ff = ff.step(t, U_fb) if mpc is None else 0.0
         U = quantize(saturate(U_fb + U_ff, U_lo, U_hi), cfg.U_quant)
 
         # 5. disturbance
@@ -195,7 +196,8 @@ def simulate(cfg: SimConfig) -> Result:
         if i < n_steps:
             y = _rk4(y, U, D0, Dm, D1, p, p3s, cfg.sensor.lag, dt)
 
-    early = [b for b, _ in ff.boluses if b < 0] if cfg.ff.enabled and cfg.ff.mode == "bolus" else []
+    early = ([b for b, _ in ff.boluses if b < 0]
+             if cfg.ff.enabled and cfg.ff.mode == "bolus" and mpc is None else [])
     if early:
         msg = (msg + " " if msg else "") + (
             f"warning: {len(early)} bolus(es) scheduled before t=0 (meal earlier than the "

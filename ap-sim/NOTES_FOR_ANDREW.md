@@ -22,3 +22,9 @@
    (share.streamlit.io → New app → this repo, branch, `ap-sim/app.py`). The agent cannot do it.
 8. Citations still marked [TO VERIFY]: Bergman 1979, Skogestad 2003, Battelino 2019, and the
    full Bequette 2002 reference from Seborg's reference list.
+9. **MPC weights are agent choices** (`apsim/mpc.py` MPCConfig: w_hypo = 10, r_du = 0.05,
+   q_w = 0.01, q_meal = 0.5, g_min = 70). None come from a source. They were picked on the
+   23.6(e) preset and cross-checked on others (BUILD_LOG Phase 7). Label them as such in the video.
+10. **Windup demo** is less dramatic than the plan expected (nadir 39.6 with anti-windup off vs
+    43.9 with clamping). Consider a bigger meal or a longer pump-saturation period if you want
+    a starker contrast.

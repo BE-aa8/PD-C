@@ -70,6 +70,11 @@ def build_config(sc: Scenario) -> SimConfig:
                      sensitivity_change=sc.sensitivity_change, saturation=sc.saturation)
 
 
+def _mpc_cfg():
+    from .mpc import MPCConfig
+    return MPCConfig()
+
+
 def _scenarios() -> dict[str, tuple[Scenario, str]]:
     b = Scenario()
     G_b = DEFAULT_PARAMS.G_basal
@@ -117,6 +122,14 @@ def _scenarios() -> dict[str, tuple[Scenario, str]]:
         "Set-point step -20 mg/dL (Ex. 23.6c)": (
             replace(b, meals=(), setpoint_steps=((T_MEAL, G_b - 20.0),)),
             "Closed-loop response to a -20 mg/dL set-point change, no meal."),
+        "MPC, unannounced meal (stretch)": (
+            replace(b, controller="mpc", mpc=_mpc_cfg()),
+            "Linear MPC with a delay-augmented model, Kalman filter, meal-shaped disturbance "
+            "state and asymmetric (hypo-weighted) cost. Same peak as PID (physics limit), "
+            "much higher nadir."),
+        "MPC + meal announcement (stretch)": (
+            replace(b, controller="mpc", mpc=_mpc_cfg(), ff=FFConfig(enabled=True)),
+            "The announced meal enters the MPC prediction (no separate bolus)."),
         "Three meals / 24 h": (
             replace(b, t_end=1440.0, meals=(Meal(480.0), Meal(780.0), Meal(1140.0))),
             "Repeated daily disturbance (t = 0 is midnight) -> run-to-run discussion "

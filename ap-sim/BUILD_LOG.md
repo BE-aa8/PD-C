@@ -120,3 +120,65 @@ deviation, and why. Numbers are from the code as committed; rerun `pytest` to re
   Ts/2 = 2.5 min the plan anticipated. Likely reasons: (1) the ZOH (Ts/2); (2) the discrete
   backward-difference derivative and filter add roughly another half-sample of lag to the D
   action; (3) the delay is rounded to dt. Nonlinearity is negligible for a 1 mg/dL step.
+
+## Phase 6: presets, app
+- Presets are `Scenario` objects (user-level knobs). `build_config()` computes the PID from the
+  reduced model at run time, so no tuning values are hard-coded. Added one preset beyond the
+  plan: "Delay-unaware tuning" (tuned for θs=0, actual 10 min): peak 163.0, nadir 45.7.
+- Preset results (default include Ts/2, τc=20, meal at 60 min):
+
+  | preset | peak | nadir | in 54–144? |
+  |---|---|---|---|
+  | Open loop | 166.2 | 81.0 | no |
+  | IMC-PID, no delay (23.6d) | 151.4 | 60.5 | no (peak) |
+  | IMC-PID, 10-min delay (23.6e) | 163.5 | 50.4 | no |
+  | Aggressive τc=2 | 162.5 | 41.8 | no |
+  | Sluggish τc=60 | 164.4 | 59.3 | no |
+  | Windup, AW off, 2× meal | 245.0 | 39.6 | no |
+  | Windup, AW on (clamp), 2× meal | 245.0 | 43.9 | no (back-calc: 42.6) |
+  | Bolus at meal | 138.9 | 49.3 | no |
+  | **15-min pre-bolus** | **107.9** | **62.6** | **yes** |
+  | Overestimate +40% (pre-bolus) | 102.0 | 57.8 | yes (but < 70) |
+  | Sensor stuck at 60 | 166.2 | 81.0 | no (identical to open loop) |
+  | SP step −20 | 81.0 | 60.1 | yes |
+
+- The windup demo shows a smaller difference than the plan implied (nadir 39.6 vs 43.9).
+  The 2× meal pins U_max for 15–20 min whether or not anti-windup is on. Most of the low comes
+  from the large P+D action and the delay, not from integral windup alone.
+- App verified headless with `streamlit.testing.AppTest`: all presets, every tuning method,
+  manual tuning, open loop, lead-lag FF, drift/dropout faults, save-run and the delay-sweep
+  button all run without exceptions.
+- **Not done: Streamlit Cloud deployment.** It needs Andrew's account (see NOTES).
+
+## Phase 7 (stretch): MPC
+- Delay-augmented ZOH discretisation of the linear model, steady-state Kalman filter, horizon
+  24 samples, box input bounds, soft G ≥ 70, asymmetric cost (w_hypo = 10). Solved with
+  L-BFGS-B and an analytic gradient (cost is piecewise quadratic, C1). A ~1 s run is fine for
+  caching. A hand-written QP / cvxpy was not needed.
+- **Key finding: the disturbance model matters more than the optimiser.** With the standard
+  random-walk *output* disturbance (offset-free MPC textbook choice), MPC ≈ PID on the 23.6(e)
+  meal (164.0 / 51.5). That model treats the meal as a permanent offset, so MPC keeps
+  delivering. Adding a decaying *input* disturbance state (decay 0.05/min, the textbook meal
+  k) gives 162.5 / **69.9**. Default `dist_model='meal'`, q_w = 0.01, q_meal = 0.5.
+  ⚠ These weights were chosen by the agent **on the 23.6(e) preset**. Cross-checked on other
+  scenarios to guard against overfitting:
+
+  | scenario | PID peak/nadir | MPC peak/nadir |
+  |---|---|---|
+  | 23.6(e) | 163.5 / 50.4 | 162.5 / 69.9 |
+  | + p3×1.5 at t=120 | 163.5 / 49.6 | 162.5 / 70.5 |
+  | + noise σ=5 | 163.0 / 50.4 | 167.6 / 71.4 |
+  | 2× meal | 245.0 / 43.9 | 244.9 / 64.7 |
+  | 3 meals / 24 h, p3×1.5 | 163.2 / 43.3 | 162.6 / 55.2 |
+  | 15-min pre-bolus vs MPC+announcement | 107.9 / 62.6 | 98.5 / 71.7 |
+
+  No controller lowers the unannounced-meal **peak**. That limit is set by the delay and the
+  insulin lag, not by the algorithm. MPC's advantage is entirely on the low side.
+- With MPC, an announced meal enters the prediction, and the separate bolus is switched off.
+- The SP step −20 (target 61) ends at 70.3 under MPC because the soft constraint G ≥ 70
+  overrides the set point. This is intended behaviour, and worth explaining.
+
+## Not built
+- 7.3 IOB limit (stretch): not implemented.
+- Phase 8 (Ex. 23.7 TF patient): not built. The plan requires checking the transfer functions
+  against the PDF first, and the PDF is not available to the agent.

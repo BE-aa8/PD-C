@@ -163,7 +163,11 @@ if controller == "mpc":
     mpc_cfg = MPCConfig(horizon=sb.slider("MPC horizon [samples]", 6, 48, m0.horizon, 1, key=K("mh")),
                         w_hypo=sb.slider("Hypo weight / hyper weight", 1.0, 50.0, m0.w_hypo, 1.0, key=K("mw")),
                         g_min=sb.slider("Soft lower limit [mg/dL]", 54.0, 90.0, m0.g_min, 1.0, key=K("mg")),
-                        r_du=m0.r_du, r_u=m0.r_u)
+                        dist_model=sb.selectbox("Disturbance model", ["meal", "output"],
+                                                ["meal", "output"].index(m0.dist_model), key=K("mdm")),
+                        r_du=sb.number_input("Move suppression r_du", value=m0.r_du, min_value=0.0, step=0.01,
+                                             format="%.3f", key=K("mrdu")),
+                        r_u=m0.r_u)
 
 sc = Scenario(controller=controller, method=method, tau_c=tau_c, include_zoh=include_zoh,
               design_delay=design_delay, manual=tuple(float(x) for x in manual), N=N, beta=beta,
@@ -228,6 +232,9 @@ with tabs[0]:
                         f"{met['insulin_feedforward']:.0f}", f"{met['insulin_above_basal']:.0f}",
                         f"{met['time_at_U_max']:.1f}", f"{met['time_at_U_min']:.1f}",
                         f"{res.bolus_planned:.0f}" if ff_on else "n/a", f"{res.sensor_delay_effective:.1f}"]})
+    if controller == "mpc":
+        st.caption("MPC is a STRETCH feature: illustrative, not a real device algorithm. With meals announced, the "
+                   "announced estimate enters the prediction instead of a bolus.")
     if cfg.pid is not None:
         st.caption(f"PID in use: Kc = {cfg.pid.Kc:.4f} (mU/min)/(mg/dL), tauI = {cfg.pid.tauI:.2f} min, "
                    f"tauD = {cfg.pid.tauD:.2f} min, N = {cfg.pid.N:g}, anti-windup = {cfg.pid.anti_windup}")
