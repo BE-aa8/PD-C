@@ -18,7 +18,7 @@ Workflow copied from the separations project (`BE-aa8/seperations`), at Andrew's
   generates `tests/expected.json`, which grades both website builds. Its own log: `ap-sim/BUILD_LOG.md`.
 
 ## Assignment requirements (summary; verbatim text in context/assignment.md)
-1. Publicly accessible website demo/documentation (deploying on Netlify)
+1. Publicly accessible website demo/documentation (GitHub Pages, deployed by CI; Netlify was used first)
 2. YouTube video of the presentation, linked on the site
 3. Verbatim YouTube auto-generated transcript, viewable on the site
 4. Overview; demo; clearly an AI project exploring AI capabilities; process (models, services, prompts); planning and iteration with my guidance and reasoning; course-related technical details; what I learned and want to learn next; attribution
@@ -36,7 +36,7 @@ Rubric: Resourcefulness/curiosity/creativity 25% · Artifacts (plan/comparison, 
 - No invented data. Every parameter comes from Seborg Ex. 23.3 (see `ap-sim/apsim/params.py`) or is a
   clearly labelled user input or ESTIMATE. Cite sources on the References page; mark unverified ones [TO VERIFY].
 - Stack: plain HTML/CSS/JavaScript, Plotly for charts, KaTeX for equations. Static, no backend. Mobile-friendly.
-  Hosted on Netlify by drag-and-drop of `site/`.
+  Hosted on GitHub Pages: CI deploys `site/` from `main` after all tests pass, then tests the live site (Netlify drag-and-drop was used first).
 - Always start new work in plan mode. Save plans in `docs/` with the model name in the filename
   (e.g. `docs/plan-v2-final.md`, `docs/plan-*-claude.md`).
 - Append prompts, decisions, iterations, and problems to `docs/process-log.md` at the end of every session.

@@ -222,3 +222,24 @@ Written by Claude Code at the end of the session, from the session itself. Promp
 - `main` fast-forwarded to `claude/site-build`. Netlify Drop zip `dist/closing-the-loop-site.zip` (not committed), checked file-by-file against `site/`.
 
 **Next step:** Andrew drags the zip onto Netlify and sends the URL; Claude runs the tests on the live site (the first real test of the Plotly/KaTeX CDN links).
+
+### Part 12: hosting moved to GitHub Pages
+
+**Prompts (verbatim):**
+25. "can I use hugging face spaces to host the website? I am going to run out of credit if I keep redeploying on Netlify"
+26. Answer to Claude's question on which host: "GitHub Pages (Recommended)". Then approved the plan.
+
+**Options considered (all free and named in the assignment, `context/assignment.md`):**
+- **Netlify** (used first, as in separations): drag-and-drop of a zip, but each redeploy uses credit on the free plan (Andrew's observation), and every update needs a manual zip and upload.
+- **Hugging Face Space (static):** free and mentioned by Prof. Co, but each update needs either an HF write token for Claude or a manual upload by Andrew.
+- **GitHub Pages:** free for a public repo; CI can publish `site/` on every push to `main` with the built-in token, after the tests pass. No zips, no extra token.
+
+**Decision (Andrew):** GitHub Pages, because it deploys itself and costs nothing per deploy.
+
+**What the AI produced:**
+- `.github/workflows/ci.yml`: a `deploy` job (needs the reference, npm and browser jobs; runs only on `main`) that publishes `site/` (both builds) with `actions/deploy-pages`, and a `live` job that checks every deployed file matches the repo byte for byte and runs the browser smoke test on the live URL (both builds, light and dark, with the real CDNs). This replaces the separations step "deployed, run the tests on the live site".
+- `CLAUDE.md`: hosting line updated.
+
+**One-time setup (Andrew):** repo Settings → Pages → Build and deployment → Source: "GitHub Actions" (the workflow's token can't turn Pages on by itself).
+
+**Next step:** Andrew enables Pages; Claude moves `main` forward; CI deploys and tests the live site; Claude reports the URL.

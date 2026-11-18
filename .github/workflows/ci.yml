@@ -97,3 +97,84 @@ jobs:
           name: smoke-screenshots
           path: smoke-results/
           retention-days: 30
+
+  # 4. Publish site/ (both builds) to GitHub Pages, only from main and only after all checks pass.
+  #    One-time setup: repo Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+  deploy:
+    name: Deploy site/ to GitHub Pages
+    needs: [reference, test, browser]
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.ref == ''))
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # 5. Test the live site (replaces "deployed, run the tests on the live site"): the deployed files must match
+  #    the repo byte for byte, and the smoke test must pass on both builds in light and dark, with the real CDNs.
+  live:
+    name: Live-site tests (GitHub Pages)
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Deployed files match the repo byte for byte
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          BASE="${PAGE_URL%/}"
+          echo "Live URL: $BASE/"
+          for attempt in 1 2 3 4 5 6; do
+            bad=0
+            while IFS= read -r f; do
+              rel="${f#site/}"
+              if ! curl -fsSL -H 'Cache-Control: no-cache' "$BASE/$rel?nocache=$GITHUB_RUN_ID-$attempt" -o /tmp/live_file || ! cmp -s "$f" /tmp/live_file; then
+                echo "mismatch or missing: $rel"; bad=1
+              fi
+            done < <(find site -type f | sort)
+            [ "$bad" = 0 ] && { echo "All $(find site -type f | wc -l) files match."; exit 0; }
+            echo "Attempt $attempt failed; waiting for the CDN to update"; sleep 15
+          done
+          exit 1
+      - name: Install Playwright + Chromium
+        run: |
+          npm install --no-save playwright@1.65.0
+          npx playwright install --with-deps chromium
+      - name: Smoke test on the live site (light + dark, both builds)
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          BASE="${PAGE_URL%/}"
+          node tests/browser-smoke.mjs --base "$BASE" --paths /,/gemini/ --out live-results
+          node tests/browser-smoke.mjs --base "$BASE" --paths /,/gemini/ --out live-results/dark --scheme dark
+      - name: Job summary
+        if: always()
+        run: |
+          { echo "Live site: ${{ needs.deploy.outputs.page_url }}"; echo; cat live-results/report.md live-results/dark/report.md; } >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+      - name: Upload screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-results
+          path: live-results/
+          retention-days: 30
