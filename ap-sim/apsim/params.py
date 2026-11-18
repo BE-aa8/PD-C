@@ -84,3 +84,9 @@ class Params:
 
 DEFAULT_PARAMS = Params()
 BAND_TEXTBOOK = (PARAM_TABLE["band_low"].value, PARAM_TABLE["band_high"].value)
+
+
+# Model-validity warning threshold [mg/dL].  NOT from a source: an agent-chosen display
+# threshold.  The minimal model has no counter-regulatory response (no glucagon, no hepatic
+# glucose release beyond the p1 term), so trajectories that fall this low are qualitative only.
+G_VALIDITY_LOW = 40.0

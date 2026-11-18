@@ -25,7 +25,7 @@ import numpy as np
 from .controller import PID, PIDConfig
 from .disturbance import Meal, meal_rate
 from .feedforward import Feedforward, FFConfig
-from .params import DEFAULT_PARAMS, Params
+from .params import DEFAULT_PARAMS, G_VALIDITY_LOW, Params
 from .patient import rhs_scalar
 from .pump import quantize, saturate
 from .sensor import Sensor, SensorConfig
@@ -78,6 +78,9 @@ class Result:
     bolus_delivered: float = 0.0
     bolus_log: list = field(default_factory=list)
     U_basal: float = 0.0
+    U_min: float = 0.0
+    U_max: float = 115.0
+    G_validity_low: float = G_VALIDITY_LOW
 
 
 def _rk4(y, U, D0, Dm, D1, p, p3s, tau_s, dt):
@@ -203,6 +206,11 @@ def simulate(cfg: SimConfig) -> Result:
             f"warning: {len(early)} bolus(es) scheduled before t=0 (meal earlier than the "
             "pre-bolus time); delivery started at t=0 instead.")
     sl = slice(0, last + 1)
+    G_lo = float(np.min(arr["G"][sl])) if last >= 0 else math.nan
+    if G_lo < G_VALIDITY_LOW:
+        msg = (msg + " " if msg else "") + (
+            f"warning: true glucose fell to {G_lo:.1f} mg/dL (< {G_VALIDITY_LOW:g}). The minimal model has "
+            "no counter-regulation (no glucagon), so this part of the trajectory is qualitative only.")
     return Result(
         t=arr["t"][sl], G_true=arr["G"][sl], G_meas=arr["Gm"][sl], G_sensor_lag=arr["Gl"][sl],
         X=arr["X"][sl], I=arr["I"][sl], U=arr["U"][sl], U_fb=arr["Ufb"][sl], U_ff=arr["Uff"][sl],
@@ -210,5 +218,5 @@ def simulate(cfg: SimConfig) -> Result:
         fb_saturated=flags["fbsat"][sl], bolus_active=flags["bolus"][sl], dropout=flags["drop"][sl],
         valid=valid, message=msg, sensor_delay_effective=sensor.effective_delay,
         bolus_planned=ff.planned_total, bolus_delivered=ff.delivered, bolus_log=ff.delivery_log,
-        U_basal=U_basal,
+        U_basal=U_basal, U_min=p.U_min, U_max=p.U_max,
     )

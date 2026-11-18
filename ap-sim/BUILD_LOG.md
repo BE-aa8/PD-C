@@ -192,3 +192,41 @@ deviation, and why. Numbers are from the code as committed; rerun `pytest` to re
   delay-unaware 162.9/43.9, aggressive 162.5/40.7, sluggish 164.3/59.0, windup off 245.0/39.1,
   windup on 245.0/45.0, bolus at meal 138.9/48.6, 15-min pre-bolus 107.9/62.2 (in band),
   +40% 102.0/57.7, SP step 81.0/59.8, 3 meals 163.4/49.3. MPC presets are unchanged (MPC doesn't use IMC tuning).
+
+---
+
+# Completion phase (after the 2026-11-18 audit; see PROJECT_STATUS.md)
+
+## Phase A: audit fixes, plan archive, Gemini materials
+- **Plan archived:** `docs/PLAN_v1_claude.md` is a verbatim copy of the plan from the session's
+  first message, with a provenance header. It is Gemini's input.
+- **B1 (fixed):** the Tuning & Stability tab now shows PID margins and the delay sweep *only*
+  when PID is the active controller; for MPC or open loop it says so. Test: `test_app.py`.
+- **B2 (fixed):** the delay-sweep button is shown only when the margins were computed (no more
+  undefined `m0`).
+- **B3 (fixed):** `Result` now carries `U_min` / `U_max`; the metrics use them instead of a
+  hard-coded 115. Test: pump with U_max = 60.
+- **B4 (fixed):** the simulator adds a warning when true glucose falls below
+  `G_VALIDITY_LOW = 40 mg/dL`. **This threshold is an agent choice, not from a source**: the
+  minimal model has no counter-regulation (no glucagon), so deep-hypo trajectories are only
+  qualitative. Example: the +30 mg/dL/h drift fault reaches 12.5 mg/dL and now warns.
+- **B8 (tested; finding):** with the default lead/lag (τ_ld = 1/p2 + 1/n ≈ 46 min, τ_lg = 10
+  min), the lead-lag output swings negative after the meal. The pump clips at 0, so total FF
+  insulin *exceeds* the static match (411 vs 278 mU for a 0.2× meal, +48%). With τ_ld < τ_lg it
+  matches to < 1%. Both behaviours are pinned by tests. This is a good teaching point: a lead
+  network asks for negative insulin, which the actuator cannot deliver.
+- **App smoke tests** (`tests/test_app.py`, `streamlit.testing`): every preset renders without
+  exceptions; the B1 behaviour is checked.
+- **Gemini materials** (Andrew runs Gemini himself with his AI Studio key):
+  `ai/prompts/01_gemini_plan_critique.md` (structured critique with G-xx IDs and confidence
+  levels; explicitly told not to agree by default *and* not to invent problems),
+  `ai/prompts/02_gemini_implementation.md` (independent build in `gemini-impl/gemsim`, not
+  shown Claude's code), `ai/COMPARISON_INTERFACE.md` (shared input/output contract;
+  explicit-gain scenarios separate simulation differences from tuning differences),
+  `tools/gemini_run.py` (stdlib-only runner that records every turn verbatim with model
+  version, hashes and token usage, and never writes the key), `ai/GEMINI_RUNBOOK.md`.
+- Runner tested offline (mocked API): file-block parsing, path-escape refusal, thought-part
+  filtering, multi-turn history, and a check that the key appears in no written file. Two bugs
+  found and fixed during testing: printing a path outside the project crashed, and the captured
+  request payload aliased the live history list.
+- Test count: 67 → **98**, all passing.

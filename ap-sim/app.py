@@ -324,38 +324,44 @@ with tabs[3]:
             st.latex(rf"\tau_I=\tau_1+\tau_2={tun.tauI:.2f},\quad \tau_D=\frac{{\tau_1\tau_2}}{{\tau_1+\tau_2}}={tun.tauD:.2f}")
         else:
             st.write({"Kc": tun.Kc, "tauI": tun.tauI, "tauD": tun.tauD})
-    pc = scenario_pid(sc)
-    st.subheader("Loop frequency response (full 3rd-order linear Gp, filtered PID)")
-    st.caption(f"Kc = {pc.Kc:.4f}, tauI = {pc.tauI:.2f}, tauD = {pc.tauD:.2f}, N = {pc.N:g}")
-    try:
-        m0 = margins(LM, pc.Kc, pc.tauI, pc.tauD, pc.N, 0.0)
-        md = margins(LM, pc.Kc, pc.tauI, pc.tauD, pc.N, delay)
-        st.table({"": ["crossover wc [rad/min]", "phase margin [deg]", "gain margin", "max additional delay [min]",
-                       "total tolerable delay [min]", "minus Ts/2 sampling allowance [min]"],
-                  "no delay in loop": [f"{m0.wc:.4f}", f"{m0.PM_deg:.1f}", f"{m0.GM:.2f}", f"{m0.dtheta_max:.1f}",
-                                       f"{m0.total_tolerable_delay:.1f}", f"{m0.total_tolerable_delay - Ts / 2:.1f}"],
-                  f"with sensor delay {delay:g} min": [f"{md.wc:.4f}", f"{md.PM_deg:.1f}", f"{md.GM:.2f}",
-                                                       f"{md.dtheta_max:.1f}", f"{md.total_tolerable_delay:.1f}",
-                                                       f"{md.total_tolerable_delay - Ts / 2:.1f}"]})
-        w, mag, ph, L = bode_data(LM, pc.Kc, pc.tauI, pc.tauD, pc.N, delay)
-        fb = make_subplots(rows=1, cols=2, subplot_titles=("Bode", "Nyquist"))
-        fb.add_trace(go.Scatter(x=w, y=20 * np.log10(mag), name="|L| [dB]"), row=1, col=1)
-        fb.add_trace(go.Scatter(x=w, y=ph, name="phase [deg]", yaxis="y3"), row=1, col=1)
-        fb.add_trace(go.Scatter(x=L.real, y=L.imag, name="L(jw)"), row=1, col=2)
-        fb.add_trace(go.Scatter(x=[-1], y=[0], mode="markers", name="-1", marker=dict(size=10, color="red")), row=1, col=2)
-        fb.update_xaxes(type="log", title="w [rad/min]", row=1, col=1)
-        fb.update_xaxes(range=[-3, 1], row=1, col=2)
-        fb.update_yaxes(range=[-3, 1], row=1, col=2)
-        fb.update_layout(height=450, yaxis3=dict(overlaying="y", side="right", title="phase"))
-        st.plotly_chart(fb, width="stretch")
-    except ValueError as e:
-        st.error(f"Margins not computed: {e}")
-    if st.button("Run empirical delay sweep (nonlinear sampled loop, unbounded pump; ~10 s)"):
-        with st.spinner("bisecting on sensor delay..."):
-            ed = emp_delay(pc, float(Ts))
-        st.write(f"Smallest sensor delay giving sustained oscillation: **{ed:.1f} min** "
-                 f"(continuous-time prediction {m0.total_tolerable_delay:.1f} min). The sampled loop goes unstable "
-                 "earlier because of the ZOH (~Ts/2) and the discrete derivative.")
+    if controller != "pid":
+        st.info("Stability margins and the delay sweep are computed for the PID loop only. The selected "
+                "controller is " + ("MPC" if controller == "mpc" else "open loop (no feedback)") + ", so no "
+                "PID margins are shown here.")
+    else:
+        pc = scenario_pid(sc)
+        st.subheader("Loop frequency response (full 3rd-order linear Gp, filtered PID)")
+        st.caption(f"Kc = {pc.Kc:.4f}, tauI = {pc.tauI:.2f}, tauD = {pc.tauD:.2f}, N = {pc.N:g}")
+        m0 = None
+        try:
+            m0 = margins(LM, pc.Kc, pc.tauI, pc.tauD, pc.N, 0.0)
+            md = margins(LM, pc.Kc, pc.tauI, pc.tauD, pc.N, delay)
+            st.table({"": ["crossover wc [rad/min]", "phase margin [deg]", "gain margin", "max additional delay [min]",
+                           "total tolerable delay [min]", "minus Ts/2 sampling allowance [min]"],
+                      "no delay in loop": [f"{m0.wc:.4f}", f"{m0.PM_deg:.1f}", f"{m0.GM:.2f}", f"{m0.dtheta_max:.1f}",
+                                           f"{m0.total_tolerable_delay:.1f}", f"{m0.total_tolerable_delay - Ts / 2:.1f}"],
+                      f"with sensor delay {delay:g} min": [f"{md.wc:.4f}", f"{md.PM_deg:.1f}", f"{md.GM:.2f}",
+                                                           f"{md.dtheta_max:.1f}", f"{md.total_tolerable_delay:.1f}",
+                                                           f"{md.total_tolerable_delay - Ts / 2:.1f}"]})
+            w, mag, ph, L = bode_data(LM, pc.Kc, pc.tauI, pc.tauD, pc.N, delay)
+            fb = make_subplots(rows=1, cols=2, subplot_titles=("Bode", "Nyquist"))
+            fb.add_trace(go.Scatter(x=w, y=20 * np.log10(mag), name="|L| [dB]"), row=1, col=1)
+            fb.add_trace(go.Scatter(x=w, y=ph, name="phase [deg]", yaxis="y3"), row=1, col=1)
+            fb.add_trace(go.Scatter(x=L.real, y=L.imag, name="L(jw)"), row=1, col=2)
+            fb.add_trace(go.Scatter(x=[-1], y=[0], mode="markers", name="-1", marker=dict(size=10, color="red")), row=1, col=2)
+            fb.update_xaxes(type="log", title="w [rad/min]", row=1, col=1)
+            fb.update_xaxes(range=[-3, 1], row=1, col=2)
+            fb.update_yaxes(range=[-3, 1], row=1, col=2)
+            fb.update_layout(height=450, yaxis3=dict(overlaying="y", side="right", title="phase"))
+            st.plotly_chart(fb, width="stretch")
+        except ValueError as e:
+            st.error(f"Margins not computed: {e}")
+        if m0 is not None and st.button("Run empirical delay sweep (nonlinear sampled loop, unbounded pump; ~10 s)"):
+            with st.spinner("bisecting on sensor delay..."):
+                ed = emp_delay(pc, float(Ts))
+            st.write(f"Smallest sensor delay giving sustained oscillation: **{ed:.1f} min** "
+                     f"(continuous-time prediction {m0.total_tolerable_delay:.1f} min). The sampled loop goes unstable "
+                     "earlier because of the ZOH (~Ts/2) and the discrete derivative.")
 
 # ------------------------------------------------------------------ 5. Compare
 with tabs[4]:

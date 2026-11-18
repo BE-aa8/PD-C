@@ -64,8 +64,8 @@ def compute_metrics(r, band=BAND_TEXTBOOK, clinical=CLINICAL_BAND, t_ref=None) -
     # insulin: U is held constant over [t_i, t_i+dt) -> rectangle rule is exact
     dt = np.diff(r.t)
     ins = lambda u: float(np.sum(u[:-1] * dt))
-    U_max_hit = r.U >= 115.0 - 1e-9
-    U_min_hit = r.U <= 1e-9
+    U_max_hit = r.U >= r.U_max - 1e-9
+    U_min_hit = r.U <= r.U_min + 1e-9
     return {
         "true": true, "measured": meas,
         "insulin_total": ins(r.U), "insulin_feedback": ins(r.U - r.U_ff),

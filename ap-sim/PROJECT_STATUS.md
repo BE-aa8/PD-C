@@ -1,6 +1,6 @@
 # PROJECT STATUS — Closing the Loop
 
-**Audit date:** 2026-11-18 · **Audited commit:** `8087a7d` on `claude/pancreas-control-simulator-w1e3tl`
+**Audit date:** 2026-11-18 (statuses updated after Phase A) · **Audited commit:** `8087a7d` on `claude/pancreas-control-simulator-w1e3tl`
 **Method:** the repository and history were inspected directly. Statuses below come from what
 was observed, not from earlier progress reports.
 
@@ -75,14 +75,14 @@ critique *before* anything was built. That did not happen. The same model that w
 
 | # | Problem | Severity | Status |
 |---|---|---|---|
-| B1 | Tuning & Stability tab shows margins for the *PID design* even when MPC or open loop is the selected controller. This is misleading in a demo. | Medium | 🔴 |
-| B2 | If `margins()` throws, the "Run empirical delay sweep" button then references an undefined `m0` → crash. | Low | 🔴 |
-| B3 | `metrics.py` hard-codes `115.0` for "time at U_max" instead of `params.U_max`. | Low | 🔴 |
-| B4 | No warning when glucose leaves a physiologically meaningful range (T22). | Medium (demo credibility) | 🔴 |
+| B1 | Tuning & Stability tab shows margins for the *PID design* even when MPC or open loop is the selected controller. This is misleading in a demo. | Medium | ✅ fixed (Phase A) |
+| B2 | If `margins()` throws, the "Run empirical delay sweep" button then references an undefined `m0` → crash. | Low | ✅ fixed (Phase A) |
+| B3 | `metrics.py` hard-codes `115.0` for "time at U_max" instead of `params.U_max`. | Low | ✅ fixed (Phase A) |
+| B4 | No warning when glucose leaves a physiologically meaningful range (T22). | Medium (demo credibility) | ✅ fixed (Phase A; 40 mg/dL threshold is an agent choice) |
 | B5 | Stability tab uses the *actual* sensor-delay slider, while tuning can use a different "design delay". This is correct, but the two aren't labelled clearly. | Low | 🔍 |
 | B6 | The windup demo contrast is weak (nadir 39.1 vs 45.0). It works, but is underwhelming for a presentation. | Low | 🔍 👤 |
 | B7 | Ex. 23.6(d) (no delay, τc = 20) leaves the band (peak 150.8). This may be correct physics, but it should be checked against the solutions manual / Andrew's hand work. | Medium | 🔍 👤 |
-| B8 | Lead-lag FF has no test. | Low | 🔍 |
+| B8 | Lead-lag FF has no test. | Low | ✅ tested (Phase A); found it over-delivers with the default lead/lag |
 | B9 | Plan §19 asked for a critique *before* the build; the build happened first. This is a process issue, not a code bug, and must be stated honestly in AI_MODEL_CRITIQUE.md / AI_DEVELOPMENT_HISTORY.md. | High (grading) | 🔴 |
 
 ## 5. Assignment deliverables
@@ -92,8 +92,8 @@ assignment text has not been provided to the agent** (👤 needed for the final 
 
 | # | Deliverable | Status | Blocker |
 |---|---|---|---|
-| A1 | Plan from model 1 (Claude Opus 5.5) | ✅ | The plan text is in the conversation but **not saved in the repo**. |
-| A2 | Critique by a different model (Gemini) | ⬜ | Needs Gemini access (👤). |
+| A1 | Plan from model 1 (Claude Opus 5.5) | ✅ | Archived verbatim in `docs/PLAN_v1_claude.md` (Phase A). |
+| A2 | Critique by a different model (Gemini) | 🟡 | Prompt + runner ready (`ai/`); Andrew runs Gemini. |
 | A3 | Accept/reject decisions with reasoning (`AI_MODEL_CRITIQUE.md`) | ⬜ | Depends on A2; decisions must be Andrew's. |
 | A4 | Implementation by model 1 (Claude) | ✅ | This branch. |
 | A5 | Independent implementation by model 2 (Gemini) | ⬜ | Needs Gemini access (👤). |
