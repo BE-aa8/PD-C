@@ -209,3 +209,16 @@ Written by Claude Code at the end of the session, from the session itself. Promp
 - The session's cost ($6.05 so far) covers the build and the comparison together; the build's share can't be separated.
 
 **Next step:** Andrew reviews `docs/comparison.md` and writes "My conclusions"; then decide whether to fix Gemini's P9 (a follow-up run) or add a content check to the browser test; then deploy to Netlify.
+
+### Part 11: both builds merged to main; Netlify zip
+
+**Prompts (verbatim):**
+23. "Did we go this far with the separations build? Or what steps should we do next to follow similar decisions to separations. Sorry, I'm just kinda confused on where exactly we are in the build of the website; I felt like we moved on to zip files by now when it came to the seperations." (Claude checked the separations process log: there, both builds were merged, zipped, deployed and tested live **before** the comparison write-up. Here the comparison came first, so merge, zip and deploy were next.)
+24. "yes, merge to main and send me the zip"
+
+**What the AI produced:**
+- Merged `gemini/pro` into `claude/site-build` (`site/` = Claude, `site/gemini/` = Gemini, unchanged), then merged `main` (Part 8 above and `docs/plan-deliverables-claude.md`). The log conflict was resolved by keeping both entries and renumbering this session's to Parts 9–10.
+- Combined checks: `npm test` 65/65 (both builds); smoke test 0 failures on `/` (7 tabs, 10 sliders) and `/gemini/` (7 tabs, 9 sliders), light and dark (CDN libraries served locally, as before).
+- `main` fast-forwarded to `claude/site-build`. Netlify Drop zip `dist/closing-the-loop-site.zip` (not committed), checked file-by-file against `site/`.
+
+**Next step:** Andrew drags the zip onto Netlify and sends the URL; Claude runs the tests on the live site (the first real test of the Plotly/KaTeX CDN links).
