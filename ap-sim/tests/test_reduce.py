@@ -39,6 +39,7 @@ def test_sopdt_equal_tau_limit_is_continuous():
 
 
 def test_effective_dead_time():
-    d = effective_dead_time(8.7, 10.0, 5.0)
+    assert effective_dead_time(8.7, 10.0, 5.0)["theta_total"] == pytest.approx(18.7)
+    d = effective_dead_time(8.7, 10.0, 5.0, include_zoh=True)
     assert d["theta_total"] == pytest.approx(21.2)
     assert d["theta_zoh"] == 2.5

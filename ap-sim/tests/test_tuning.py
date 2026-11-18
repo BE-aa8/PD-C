@@ -28,7 +28,7 @@ def test_formulas():
 def test_default_tau_c_is_theta_total():
     tun, info = design(DesignSpec(tau_c=None, theta_sensor=10.0))
     assert info["tau_c"] == pytest.approx(info["theta_total"])
-    assert info["theta_total"] == pytest.approx(reduced_models()["fit_sopdt"].theta + 12.5)
+    assert info["theta_total"] == pytest.approx(reduced_models()["fit_sopdt"].theta + 10.0)
 
 
 def test_negative_gain():

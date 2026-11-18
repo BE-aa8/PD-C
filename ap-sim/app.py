@@ -315,7 +315,7 @@ with tabs[3]:
         tun, info = design(design_spec(sc), P)
         m = info["model"]
         st.subheader(f"{tun.rule} from the {info['model_name']} model")
-        st.markdown(f"theta_total = theta_model + theta_sensor + Ts/2 = {info['theta_model']:.2f} + "
+        st.markdown(f"theta_total = theta_model + theta_sensor + (Ts/2 if enabled) = {info['theta_model']:.2f} + "
                     f"{info['theta_sensor']:.2f} + {info['theta_zoh']:.2f} = **{info['theta_total']:.2f} min**; "
                     f"tau_c = **{info['tau_c']:.2f} min**")
         if hasattr(m, "tau1") and tun.rule.startswith("IMC SOPDT"):

@@ -182,3 +182,13 @@ deviation, and why. Numbers are from the code as committed; rerun `pytest` to re
 - 7.3 IOB limit (stretch): not implemented.
 - Phase 8 (Ex. 23.7 TF patient): not built. The plan requires checking the transfer functions
   against the PDF first, and the PDF is not available to the agent.
+
+## Change (Andrew's decision): Ts/2 OFF by default
+- `include_zoh` now defaults to **False** in `DesignSpec`, `Scenario` and `effective_dead_time`,
+  so tuning matches the §6/§13 reference values (Kc = −0.426 for θs = 10, τc = 20). The Ts/2 term
+  is still available as an app toggle. Note that the sampled loop really does carry about Ts/2 of
+  extra delay; the Tuning & Stability tab still shows the "minus Ts/2" allowance.
+- Preset results with the new default (peak / nadir): 23.6(d) 150.8/60.1, 23.6(e) 163.4/49.4,
+  delay-unaware 162.9/43.9, aggressive 162.5/40.7, sluggish 164.3/59.0, windup off 245.0/39.1,
+  windup on 245.0/45.0, bolus at meal 138.9/48.6, 15-min pre-bolus 107.9/62.2 (in band),
+  +40% 102.0/57.7, SP step 81.0/59.8, 3 meals 163.4/49.3. MPC presets are unchanged (MPC doesn't use IMC tuning).

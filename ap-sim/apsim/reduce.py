@@ -99,8 +99,8 @@ def fit_nonlinear_step(dU: float = 1.0, t_end: float = 600.0, dt: float = 0.1, p
 
 
 def effective_dead_time(theta_model: float, theta_sensor: float, Ts: float,
-                        include_zoh: bool = True) -> dict:
-    """theta_total = theta_model + theta_sensor + Ts/2 (ZOH approximation)."""
+                        include_zoh: bool = False) -> dict:
+    """theta_total = theta_model + theta_sensor [+ Ts/2 (ZOH approximation) if include_zoh]."""
     zoh = Ts / 2 if include_zoh else 0.0
     return {"theta_model": theta_model, "theta_sensor": theta_sensor, "theta_zoh": zoh,
             "theta_total": theta_model + theta_sensor + zoh}

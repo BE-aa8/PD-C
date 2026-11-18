@@ -31,7 +31,7 @@ class DesignSpec:
     tau_c: float | None = None      # None -> tau_c = theta_total
     theta_sensor: float = 10.0
     Ts: float = 5.0
-    include_zoh: bool = True        # add Ts/2 to theta_total (Sec. 5.3)
+    include_zoh: bool = False       # add Ts/2 to theta_total (Sec. 5.3); off to match the Sec. 6/13 references
     N: float = 10.0
     beta: float = 1.0
     anti_windup: str = "clamp"

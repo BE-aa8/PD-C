@@ -27,7 +27,7 @@ class Scenario:
     controller: str = "pid"                 # pid | none | mpc
     method: str = "imc_fit_sopdt"           # see design.METHODS, or "manual"
     tau_c: float | None = 20.0              # None -> tau_c = theta_total
-    include_zoh: bool = True
+    include_zoh: bool = False               # Ts/2 off by default (matches plan references)
     design_delay: float | None = None       # delay assumed in tuning; None -> actual sensor delay
     manual: tuple[float, float, float] = (-0.4, 70.0, 17.5)   # Kc, tauI, tauD for "manual"
     N: float = 10.0

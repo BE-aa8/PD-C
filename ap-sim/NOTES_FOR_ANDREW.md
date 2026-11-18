@@ -5,9 +5,7 @@
    (Case I SOPDT→PID, Case G FOPDT→PI, Case H FOPDT→PID). Please confirm against the book.
    The same goes for the τc guideline: the default τc = θ_total is Skogestad's SIMC choice.
    Confirm the page in Seborg Ch. 12 where it is discussed before citing it.
-2. **Ts/2 in θ_total: which one do you want as the default?** §5.3 says include it. The
-   reference numbers in §6 and §13 were computed without it. The default is currently
-   *include* (§5.3), and the app has a toggle. See BUILD_LOG Phase 3 for the table.
+2. ~~Ts/2 in θ_total default~~ **Resolved:** off by default, to match the §6/§13 references (toggle in the app).
 3. **Meal time.** Presets use a meal at t = 60 min so that pre-boluses fit inside the run.
    If you want the meal at t = 0 (as in the textbook figure), the pre-bolus presets need a
    negative start time. Not implemented. Tell me if you want that.
