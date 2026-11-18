@@ -268,3 +268,13 @@ Written by Claude Code at the end of the session, from the session itself. Promp
 **Results (local, CDN served from local copies):** smoke test 0 failures on `/` (9 sliders) and `/gemini/` (9), light and dark; content test 19/19 light and dark; extended check (40 Simulator sliders with options on, 11 in manual mode, 5 manual on Control Design, 8 on Theory/Design, every preset) found no NaN, console errors or dead sliders.
 
 **Next step:** push to `main` → CI deploys → live tests (now including the content test).
+
+### Part 14: brief for a third model (ChatGPT) to plan the UI/UX redesign
+
+**Prompt (verbatim, Andrew pasting ChatGPT's request):** "I'm working with ChatGPT to give the website an overall UI and UX redesign plan for you to implement later. Here is what it is asking for, provide the materials needed please. 6. What I need to know about your project … What is the class project about? If you have the existing website, send me its URL or upload the source files. … My goal would be to develop a cohesive design direction that combines: visual storytelling. sophisticated technical presentation. minimalist typography and scroll interactions. I would prioritize making it look like a professionally designed technology company's website, not a student website with a dark theme."
+
+**What the AI produced (same pattern as separations):**
+- `docs/ux-brief-for-chatgpt.md`: what the project is (the process-control framing and the four-step teaching story, using only numbers the site or the Python reference computes), live URL and repo, the current 7-tab structure with counts, which files may change (`model.js`, `data.js`, `site/gemini/` may not), the course rules (disclaimer on every page and no "real medical product" look; equation + units + interpretation visible; every calculation charted; no new numbers), the tests and every ID they rely on, a starting list of UX problems, and what ChatGPT should return (direction, page-by-page plan, phases, questions). ChatGPT plans; Claude implements later.
+- Not committed (in `dist/`): `chatgpt-ux.zip` with the brief, `chatgpt-ux-bundle.txt` (brief + `index.html`, `style.css`, `app.js`) and 12 current screenshots (desktop light/dark, phone).
+
+**Next step:** Andrew gives ChatGPT the brief and the zip, brings back its plan; Claude reviews it against the tests and rules, then implements it in phases (plan mode first).
