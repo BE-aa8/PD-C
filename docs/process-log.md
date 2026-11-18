@@ -242,4 +242,6 @@ Written by Claude Code at the end of the session, from the session itself. Promp
 
 **One-time setup (Andrew):** repo Settings → Pages → Build and deployment → Source: "GitHub Actions" (the workflow's token can't turn Pages on by itself).
 
-**Next step:** Andrew enables Pages; Claude moves `main` forward; CI deploys and tests the live site; Claude reports the URL.
+**Result:** Andrew enabled Pages ("done"); `main` moved to `33626bc`. CI run 44386879442: reference, npm test, browser, **deploy** and **live** jobs all green. Live site **https://be-aa8.github.io/PD-C/** (Claude) and **https://be-aa8.github.io/PD-C/gemini/** (Gemini): all 10 deployed files match the repo byte for byte; smoke test with the real CDNs 0 failures on both builds in light and dark (7 tabs; 10 and 9 sliders). Screenshots: the run's `live-results` artifact (30 days).
+
+**Next step:** Andrew reviews the live site and writes "My conclusions" in `docs/comparison.md`; the AI Workflow, Video and References tabs come next (`docs/plan-deliverables-claude.md`).
