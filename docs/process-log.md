@@ -123,3 +123,17 @@ Reconstructed by Claude Code at the end of the session from the session's own co
 - Approved Gemini's plan with Claude's drafted answers (sent as the build `message`): sweep resolution is Gemini's choice (keep it responsive), a toggle on P9 for unannounced/announced, and the §5 integral-term clarification.
 
 **Next step:** Gemini build stage; Claude's website build in a fresh session.
+
+### Part 7: Gemini build stage and verification
+
+**What the AI produced:**
+- Gemini build run `20261118T173105Z` (requested gemini-3.5-flash; Google served gemini-3.8-flash plus a small gemini-3-flash-preview call): 16 min 19 s, 73 tool calls. 5 files in `site/gemini/` (index.html 875 lines, app.js 1379, model.js 715, style.css 613, plus `data.js` copied byte-for-byte). No files changed outside its folder. Gemini made its own commit (`98b4fb8`), as the build prompt allows.
+- Pessimistic cost estimate: $38.84 for this run, **$46.28 total**. 8.93M of the 9.29M input tokens were cached. At the separations comparison's price basis (unverified) it is about $2.70 for this run and $3.60 total. **The total is past the $20 budget, so any follow-up run would be blocked** unless Andrew raises it. Real spend: check the AI Studio bill.
+
+**Claude's independent verification (not relying on Gemini's own report):**
+- `npm test` on a clean checkout of `gemini/pro`: **33/33 passed** (25 golden scenarios, 60 tuning cases, 4 margin cases, contract, noise reproducibility). First try, no follow-up prompts.
+- Browser smoke test on GitHub's CI (CI run 44363289256, run against `gemini/pro`): **7 tabs, 9 sliders tested, 0 failures in light and in dark mode**, including 375 px mobile.
+- Gemini's logs show no reads of `ap-sim/` or the Claude-side docs. The one mention of `ap-sim/` is in its report, describing where `expected.json` came from.
+- Problems found on the Claude side, not in Gemini's build: (1) GitHub doesn't start CI for pushes made by a workflow, so CI never ran on `gemini/pro` automatically. (2) CI tried to smoke-test `/` before Claude's site existed and failed on the bare directory listing. Fixed in `ci.yml`: test only the builds that exist; manual runs can target another branch. (3) This sandbox's Chromium can't reach the Plotly/KaTeX CDNs, so browser tests run on GitHub's CI instead.
+
+**Next step:** Claude's website build in a fresh Claude Code session (plan mode, `docs/build-prompt.md`, output `site/`).
