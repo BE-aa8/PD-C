@@ -1,0 +1,283 @@
+[
+  {
+    "path": "/",
+    "tabs": [
+      {
+        "label": "Overview",
+        "katex": 0,
+        "katexErrors": 0,
+        "plots": 0,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 0,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-01-Overview.png"
+      },
+      {
+        "label": "Simulator",
+        "katex": 12,
+        "katexErrors": 0,
+        "plots": 6,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 10,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-02-Simulator.png"
+      },
+      {
+        "label": "Theory",
+        "katex": 21,
+        "katexErrors": 0,
+        "plots": 3,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 4,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-03-Theory.png"
+      },
+      {
+        "label": "Control Design",
+        "katex": 18,
+        "katexErrors": 0,
+        "plots": 3,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 4,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-04-Control_Design.png"
+      },
+      {
+        "label": "AI Workflow",
+        "katex": 0,
+        "katexErrors": 0,
+        "plots": 0,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 0,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-05-AI_Workflow.png"
+      },
+      {
+        "label": "Video & Transcript",
+        "katex": 0,
+        "katexErrors": 0,
+        "plots": 0,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 0,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-06-Video_Transcript.png"
+      },
+      {
+        "label": "References",
+        "katex": 0,
+        "katexErrors": 0,
+        "plots": 0,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 0,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-07-References.png"
+      }
+    ],
+    "sliders": [
+      {
+        "id": "sim-tau_c",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "sim-theta_design",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "sim-N",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "sim-beta",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "sim-meal_t",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "sim-meal_mult",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "sim-sensor_delay",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "sim-sensor_lag",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "sim-noise_sd",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "sim-t_end",
+        "changed": true,
+        "nan": false
+      }
+    ],
+    "failures": [],
+    "consoleErrors": []
+  },
+  {
+    "path": "/gemini/",
+    "tabs": [
+      {
+        "label": "Overview",
+        "katex": 0,
+        "katexErrors": 0,
+        "plots": 0,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 0,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-01-Overview.png"
+      },
+      {
+        "label": "Simulator",
+        "katex": 0,
+        "katexErrors": 0,
+        "plots": 3,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 9,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-02-Simulator.png"
+      },
+      {
+        "label": "Theory",
+        "katex": 6,
+        "katexErrors": 0,
+        "plots": 2,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 0,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-03-Theory.png"
+      },
+      {
+        "label": "Control Design",
+        "katex": 3,
+        "katexErrors": 0,
+        "plots": 5,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 0,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-04-Control_Design.png"
+      },
+      {
+        "label": "AI Workflow",
+        "katex": 0,
+        "katexErrors": 0,
+        "plots": 0,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 0,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-05-AI_Workflow.png"
+      },
+      {
+        "label": "Video & Transcript",
+        "katex": 0,
+        "katexErrors": 0,
+        "plots": 0,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 0,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-06-Video_Transcript.png"
+      },
+      {
+        "label": "References",
+        "katex": 0,
+        "katexErrors": 0,
+        "plots": 0,
+        "plotsUnrendered": 0,
+        "nanText": false,
+        "sliders": 0,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "screenshot": "desktop-07-References.png"
+      }
+    ],
+    "sliders": [
+      {
+        "id": "slider-setpoint",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "slider-kc",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "slider-tau-i",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "slider-tau-d",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "slider-filter-n",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "slider-beta",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "slider-sensor-delay",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "slider-sensor-lag",
+        "changed": true,
+        "nan": false
+      },
+      {
+        "id": "slider-sensor-noise",
+        "changed": true,
+        "nan": false
+      }
+    ],
+    "failures": [],
+    "consoleErrors": []
+  }
+]

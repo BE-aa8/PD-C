@@ -137,3 +137,63 @@ Reconstructed by Claude Code at the end of the session from the session's own co
 - Problems found on the Claude side, not in Gemini's build: (1) GitHub doesn't start CI for pushes made by a workflow, so CI never ran on `gemini/pro` automatically. (2) CI tried to smoke-test `/` before Claude's site existed and failed on the bare directory listing. Fixed in `ci.yml`: test only the builds that exist; manual runs can target another branch. (3) This sandbox's Chromium can't reach the Plotly/KaTeX CDNs, so browser tests run on GitHub's CI instead.
 
 **Next step:** Claude's website build in a fresh Claude Code session (plan mode, `docs/build-prompt.md`, output `site/`).
+
+### Part 8: Claude website build
+
+Written by Claude Code at the end of the session, from the session itself. Prompts are quoted verbatim.
+
+**Prompts (verbatim):**
+15. The build prompt from `docs/build-prompt.md` (output folder `site/`), delivered to a fresh Claude Code session started in plan mode. Not repeated here.
+16. Andrew approved the plan without changes.
+17. "Put the charts above the controls on mobile"
+18. "what's the next steps?"
+19. "yes, do steps 1 and 2" (step 1 = this process-log entry, step 2 = `docs/comparison.md`)
+
+**What the AI produced:**
+- Claude Code (Opus 5.5; the session record confirms `claude-opus-5-5` served every turn): a plan written after reading only the allowed files (plan v2, `data.js`, `tests/`, `package.json`, `CLAUDE.md`). Plan v1 was off-limits, so Claude derived the ODEs, linearization, half rule and the three IMC formulas itself and checked each against the numbers in `tests/expected.json` before writing code.
+- `site/js/model.js` (commit `05d8709`): pure engine with the full §9 API. **`npm test` 33/33 on the first run**, no fixes.
+- `site/index.html`, `site/css/style.css`, `site/js/app.js` (commit `8636e2f`): the seven tabs, 22 presets, charts P1–P11 plus a bolus chart on Theory, equation · units · meaning cards, a live SVG block diagram, saved-run overlay, light/dark, AI Workflow / Video / References as placeholders.
+- Commit `ce6a77f`: charts above the controls at ≤ 900 px wide (prompt 17).
+- Timing: session started 17:56 UTC, site committed 18:24 UTC (≈ 27 min including its own browser checks).
+
+**Choices Claude made where plan v2 is silent (reported, not asked):**
+- `saturation: false` removes all pump limits (PID clip, anti-windup and total), with a warning if insulin goes negative.
+- An invalid run (glucose ≤ 0) stops; the arrays are cut short and `valid = false`.
+- Noise is drawn at every sample, even while the sensor is stuck or dropped out.
+- Presets come from the scenario list in `expected.json` (meals at 60 min); the default preset equals `DEFAULT_INPUTS`.
+- Picking the drift fault with a zero rate starts at +10 mg/dL per h (the drift preset's value).
+
+**What I accepted / changed / rejected, and why:**
+- Accepted the plan as written. Asked for one layout change (prompt 17) because on a phone the controls came before every chart.
+
+**Problems hit:**
+- This container's proxy blocks the Plotly and KaTeX CDNs (HTTP 403). For testing only, Claude served the same pinned versions from local npm copies through a Playwright route; the site still loads them from the CDN. A copy of `tests/browser-smoke.mjs` with that route added was used; `tests/` was not changed.
+- Claude's own browser check (beyond the smoke test) found two bugs, both fixed before the commit: the fault-start slider did nothing for drift with a zero rate, and the Theory bolus sliders changed only text (a chart was added).
+- Final checks: smoke test 7 tabs, 10 sliders, 0 failures in light and dark, no horizontal scroll at 375 px; Claude's extra check moved all 40 Simulator sliders (with feedforward, faults, set point and sensitivity switched on) plus the 8 on Theory and Control Design, loaded every preset, and found no NaN, KaTeX errors or console errors.
+- The build prompt limited edits to `site/`, so this process-log entry was written afterwards (prompt 19), not during the build.
+
+**Next step:** compare the two builds (Part 9).
+
+### Part 9: build comparison
+
+**Prompt (verbatim):** 19 above.
+
+**What the AI produced:**
+- `docs/comparison.md`, laid out like the separations comparison: setup, results table, findings, fairness caveats, process lessons, and an empty "My conclusions" for Andrew.
+- `tools/compare-builds.mjs` → `docs/comparison-data.json`: precision against the reference, agreement between the builds on 13 inputs that aren't in the tests, 18 invalid-input cases, and speed.
+- `docs/screenshots/comparison/`: six screenshots (Simulator light/dark, Control Design) of both builds, plus smoke-test reports for both builds in light and dark (all 0 failures).
+
+**Key results (details and sources in `docs/comparison.md`):**
+- Both builds: 33/33, 0 smoke-test failures. Gemini matches the reference ~1000× more closely (it copied the full-precision default gains from `expected.json`; Claude recomputes them from the rounded fits in `data.js`) and its engine is ~2× faster.
+- Gemini's site has problems the smoke test can't see: the PID-vs-MPC chart (P9) reads data keys that don't exist, so it shows no data; the block diagram has black filled shapes; there is no τc control or step-by-step IMC calculation; only 9 equations on the site vs Claude's 51.
+- Gemini wrote its own AI Workflow history instead of a placeholder. It says Gemini's critique found "26 potential pitfalls" (the critique has 11 findings; 26 is the number of rows in Claude's decision table), and it removed every [TO VERIFY] flag.
+- Claude's engine sanitizes bad inputs and warns, but it drops a negative set-point step silently. Gemini's throws on t_end < 0 or dt = 0 and returns NaN for a NaN gain.
+- The two builds read two plan sentences differently ("no clip when saturation = false" and "one draw per sample read"). Neither is tested.
+
+**What I accepted / changed / rejected, and why:** *[Andrew: to fill after reading `docs/comparison.md`, and write "My conclusions" there.]*
+
+**Problems hit:**
+- Claude is comparing its own build. Every claim in the comparison is tied to a test, a script output or a line of code so Andrew can check it.
+- The session's cost ($6.05 so far) covers the build and the comparison together; the build's share can't be separated.
+
+**Next step:** Andrew reviews `docs/comparison.md` and writes "My conclusions"; then decide whether to fix Gemini's P9 (a follow-up run) or add a content check to the browser test; then deploy to Netlify.

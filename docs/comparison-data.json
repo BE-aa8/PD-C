@@ -1,0 +1,1161 @@
+{
+ "generatedBy": "tools/compare-builds.mjs",
+ "node": "v22.23.5",
+ "gemini_model_js": "site/gemini/js/model.js",
+ "headroom": [
+  {
+   "scenario": "open_loop_meal_at_0",
+   "claude": {
+    "maxGerr": 4.43e-8,
+    "maxUerr": 0,
+    "worstRatio": 8.87e-7,
+    "worstKey": "G"
+   },
+   "gemini": {
+    "maxGerr": 4.43e-8,
+    "maxUerr": 0,
+    "worstRatio": 8.87e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "ex23_6d_no_delay",
+   "claude": {
+    "maxGerr": 4.86e-8,
+    "maxUerr": 4.7e-9,
+    "worstRatio": 9.73e-7,
+    "worstKey": "G"
+   },
+   "gemini": {
+    "maxGerr": 4.86e-8,
+    "maxUerr": 4.7e-9,
+    "worstRatio": 9.73e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "ex23_6e_feedback_only",
+   "claude": {
+    "maxGerr": 0.0000251,
+    "maxUerr": 0.0000358,
+    "worstRatio": 0.000716,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 4.84e-8,
+    "maxUerr": 4.98e-9,
+    "worstRatio": 9.68e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "delay_unaware_tuning",
+   "claude": {
+    "maxGerr": 4.94e-8,
+    "maxUerr": 4.98e-9,
+    "worstRatio": 9.88e-7,
+    "worstKey": "G"
+   },
+   "gemini": {
+    "maxGerr": 4.94e-8,
+    "maxUerr": 4.98e-9,
+    "worstRatio": 9.88e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "aggressive_tau_c_2",
+   "claude": {
+    "maxGerr": 4.75e-8,
+    "maxUerr": 6.97e-9,
+    "worstRatio": 9.5e-7,
+    "worstKey": "G"
+   },
+   "gemini": {
+    "maxGerr": 4.75e-8,
+    "maxUerr": 6.97e-9,
+    "worstRatio": 9.5e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "bolus_at_meal",
+   "claude": {
+    "maxGerr": 0.0000141,
+    "maxUerr": 0.000035,
+    "worstRatio": 0.000701,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 4.45e-8,
+    "maxUerr": 4.87e-9,
+    "worstRatio": 8.9e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "prebolus_15",
+   "claude": {
+    "maxGerr": 0.000011,
+    "maxUerr": 0.0000206,
+    "worstRatio": 0.000413,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 4.79e-8,
+    "maxUerr": 4.97e-9,
+    "worstRatio": 9.58e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "overestimate_40",
+   "claude": {
+    "maxGerr": 0.0000152,
+    "maxUerr": 0.0000197,
+    "worstRatio": 0.000394,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 4.64e-9,
+    "maxUerr": 4.88e-9,
+    "worstRatio": 6.53e-7,
+    "worstKey": "peak"
+   }
+  },
+  {
+   "scenario": "windup_off_2x",
+   "claude": {
+    "maxGerr": 0.00000893,
+    "maxUerr": 0.0000232,
+    "worstRatio": 0.000464,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 4.81e-8,
+    "maxUerr": 4.87e-9,
+    "worstRatio": 9.63e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "windup_clamp_2x",
+   "claude": {
+    "maxGerr": 0.0000134,
+    "maxUerr": 0.000061,
+    "worstRatio": 0.00122,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 4.81e-8,
+    "maxUerr": 1.86e-8,
+    "worstRatio": 9.63e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "windup_backcalc_2x",
+   "claude": {
+    "maxGerr": 0.0000329,
+    "maxUerr": 0.0000246,
+    "worstRatio": 0.000657,
+    "worstKey": "G"
+   },
+   "gemini": {
+    "maxGerr": 4.81e-8,
+    "maxUerr": 4.81e-9,
+    "worstRatio": 9.63e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "sp_step_minus20",
+   "claude": {
+    "maxGerr": 0.000008,
+    "maxUerr": 0.00000717,
+    "worstRatio": 0.00016,
+    "worstKey": "G"
+   },
+   "gemini": {
+    "maxGerr": 5e-9,
+    "maxUerr": 4.96e-9,
+    "worstRatio": 1e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "sp_step_minus20_beta_half",
+   "claude": {
+    "maxGerr": 0.00000628,
+    "maxUerr": 0.00000446,
+    "worstRatio": 0.000126,
+    "worstKey": "G"
+   },
+   "gemini": {
+    "maxGerr": 4.8e-9,
+    "maxUerr": 4.99e-9,
+    "worstRatio": 9.98e-8,
+    "worstKey": "U"
+   }
+  },
+  {
+   "scenario": "beta_half_steady_state",
+   "claude": {
+    "maxGerr": 0,
+    "maxUerr": 0,
+    "worstRatio": 7.28e-13,
+    "worstKey": "insulin"
+   },
+   "gemini": {
+    "maxGerr": 0,
+    "maxUerr": 0,
+    "worstRatio": 7.28e-13,
+    "worstKey": "insulin"
+   }
+  },
+  {
+   "scenario": "p_only_offset",
+   "claude": {
+    "maxGerr": 0.00000722,
+    "maxUerr": 0.00000554,
+    "worstRatio": 0.000144,
+    "worstKey": "G"
+   },
+   "gemini": {
+    "maxGerr": 4.98e-9,
+    "maxUerr": 4.73e-9,
+    "worstRatio": 9.96e-8,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "pi_mode",
+   "claude": {
+    "maxGerr": 0.0000389,
+    "maxUerr": 0.0000284,
+    "worstRatio": 0.000777,
+    "worstKey": "G"
+   },
+   "gemini": {
+    "maxGerr": 3.93e-8,
+    "maxUerr": 4.99e-9,
+    "worstRatio": 8.49e-7,
+    "worstKey": "peak"
+   }
+  },
+  {
+   "scenario": "sensor_lag_5",
+   "claude": {
+    "maxGerr": 0.0000263,
+    "maxUerr": 0.0000372,
+    "worstRatio": 0.000745,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 4.17e-8,
+    "maxUerr": 4.99e-9,
+    "worstRatio": 8.35e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "sensor_stuck_60",
+   "claude": {
+    "maxGerr": 4.17e-8,
+    "maxUerr": 0,
+    "worstRatio": 8.35e-7,
+    "worstKey": "G"
+   },
+   "gemini": {
+    "maxGerr": 4.17e-8,
+    "maxUerr": 0,
+    "worstRatio": 8.35e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "sensor_drift",
+   "claude": {
+    "maxGerr": 0.0000259,
+    "maxUerr": 0.0000375,
+    "worstRatio": 0.000751,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 9.94e-9,
+    "maxUerr": 4.89e-9,
+    "worstRatio": 4.34e-7,
+    "worstKey": "peak"
+   }
+  },
+  {
+   "scenario": "sensor_dropout",
+   "claude": {
+    "maxGerr": 0.0000267,
+    "maxUerr": 0.0000358,
+    "worstRatio": 0.000716,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 4.84e-8,
+    "maxUerr": 4.9e-9,
+    "worstRatio": 9.68e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "sensitivity_x1_5",
+   "claude": {
+    "maxGerr": 0.0000251,
+    "maxUerr": 0.0000358,
+    "worstRatio": 0.000716,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 4.84e-8,
+    "maxUerr": 4.92e-9,
+    "worstRatio": 9.68e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "three_meals_24h",
+   "claude": {
+    "maxGerr": 0.0000248,
+    "maxUerr": 0.0000358,
+    "worstRatio": 0.000717,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 3.31e-8,
+    "maxUerr": 4.94e-9,
+    "worstRatio": 6.61e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "suspend_integral",
+   "claude": {
+    "maxGerr": 0.000013,
+    "maxUerr": 0.0000206,
+    "worstRatio": 0.000412,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 2.74e-8,
+    "maxUerr": 4.65e-9,
+    "worstRatio": 5.47e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "bolus_before_t0",
+   "claude": {
+    "maxGerr": 0.0000141,
+    "maxUerr": 0.000035,
+    "worstRatio": 0.0007,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 4.98e-8,
+    "maxUerr": 5e-9,
+    "worstRatio": 9.95e-7,
+    "worstKey": "G"
+   }
+  },
+  {
+   "scenario": "backcalc_small_tauD",
+   "claude": {
+    "maxGerr": 0.0000399,
+    "maxUerr": 0.0000567,
+    "worstRatio": 0.00113,
+    "worstKey": "U"
+   },
+   "gemini": {
+    "maxGerr": 4.28e-8,
+    "maxUerr": 4.21e-8,
+    "worstRatio": 8.56e-7,
+    "worstKey": "G"
+   }
+  }
+ ],
+ "agreement": [
+  {
+   "id": "noise_seed7",
+   "label": "Noise σ = 5, seed 7",
+   "inputs": {
+    "noise_sd": 5,
+    "seed": 7
+   },
+   "maxAbsDiffG": 0.000028,
+   "maxAbsDiffU": 0.0000439,
+   "maxAbsDiffGm": 0.0000279,
+   "peak": {
+    "claude": 160,
+    "gemini": 160
+   },
+   "nadir": {
+    "claude": 49.1,
+    "gemini": 49.1
+   },
+   "warnings": {
+    "claude": [],
+    "gemini": []
+   },
+   "length": {
+    "claude": 6601,
+    "gemini": 6601
+   },
+   "Umin": {
+    "claude": 0,
+    "gemini": 0
+   }
+  },
+  {
+   "id": "noise_stuck",
+   "label": "Noise σ = 5 + stuck sensor at 100 min",
+   "inputs": {
+    "noise_sd": 5,
+    "seed": 3,
+    "fault": "stuck",
+    "t_fault": 100
+   },
+   "maxAbsDiffG": 0.0000278,
+   "maxAbsDiffU": 0.0000628,
+   "maxAbsDiffGm": 0.00000348,
+   "peak": {
+    "claude": 163,
+    "gemini": 163
+   },
+   "nadir": {
+    "claude": 12.8,
+    "gemini": 12.8
+   },
+   "warnings": {
+    "claude": [
+     "Glucose fell below 40 mg/dL. The model has no counter-regulation (no glucagon), so this part is qualitative only."
+    ],
+    "gemini": [
+     "Glucose dropped below 40 mg/dL: minimal model has no counter-regulation, so this part of the trajectory is qualitative only."
+    ]
+   },
+   "length": {
+    "claude": 6601,
+    "gemini": 6601
+   },
+   "Umin": {
+    "claude": 2.54,
+    "gemini": 2.54
+   }
+  },
+  {
+   "id": "noise_dropout",
+   "label": "Noise σ = 5 + dropout 100–130 min",
+   "inputs": {
+    "noise_sd": 5,
+    "seed": 3,
+    "fault": "dropout",
+    "t_fault": 100
+   },
+   "maxAbsDiffG": 6.52,
+   "maxAbsDiffU": 27.3,
+   "maxAbsDiffGm": 22.8,
+   "peak": {
+    "claude": 163,
+    "gemini": 163
+   },
+   "nadir": {
+    "claude": 33,
+    "gemini": 33
+   },
+   "warnings": {
+    "claude": [
+     "Glucose fell below 40 mg/dL. The model has no counter-regulation (no glucagon), so this part is qualitative only."
+    ],
+    "gemini": [
+     "Glucose dropped below 40 mg/dL: minimal model has no counter-regulation, so this part of the trajectory is qualitative only."
+    ]
+   },
+   "length": {
+    "claude": 6601,
+    "gemini": 6601
+   },
+   "Umin": {
+    "claude": 0,
+    "gemini": 0
+   }
+  },
+  {
+   "id": "no_saturation_2x",
+   "label": "Pump limits off, 2× meal",
+   "inputs": {
+    "saturation": false,
+    "meals": [
+     [
+      60,
+      2
+     ]
+    ]
+   },
+   "maxAbsDiffG": 16,
+   "maxAbsDiffU": 33.6,
+   "maxAbsDiffGm": 16,
+   "peak": {
+    "claude": 244,
+    "gemini": 245
+   },
+   "nadir": {
+    "claude": 37.4,
+    "gemini": 45
+   },
+   "warnings": {
+    "claude": [
+     "Glucose fell below 40 mg/dL. The model has no counter-regulation (no glucagon), so this part is qualitative only."
+    ],
+    "gemini": []
+   },
+   "length": {
+    "claude": 6601,
+    "gemini": 6601
+   },
+   "Umin": {
+    "claude": 1.13,
+    "gemini": 0
+   }
+  },
+  {
+   "id": "day_ff_backcalc",
+   "label": "24 h, 3 meals, pre-bolus 15, back-calculation",
+   "inputs": {
+    "t_end": 1440,
+    "meals": [
+     [
+      480,
+      1
+     ],
+     [
+      780,
+      1.5
+     ],
+     [
+      1140,
+      1
+     ]
+    ],
+    "ff_enabled": true,
+    "t_pre": 15,
+    "anti_windup": "backcalc"
+   },
+   "maxAbsDiffG": 0.0000149,
+   "maxAbsDiffU": 0.0000601,
+   "maxAbsDiffGm": 0.0000149,
+   "peak": {
+    "claude": 127,
+    "gemini": 127
+   },
+   "nadir": {
+    "claude": 54,
+    "gemini": 54
+   },
+   "warnings": {
+    "claude": [],
+    "gemini": []
+   },
+   "length": {
+    "claude": 14401,
+    "gemini": 14401
+   },
+   "Umin": {
+    "claude": 2.29,
+    "gemini": 2.29
+   }
+  },
+  {
+   "id": "odd_delay_lag",
+   "label": "Delay 7.3 min + lag 0.5 min",
+   "inputs": {
+    "sensor_delay": 7.3,
+    "sensor_lag": 0.5
+   },
+   "maxAbsDiffG": 0.0000267,
+   "maxAbsDiffU": 0.0000402,
+   "maxAbsDiffGm": 0.0000266,
+   "peak": {
+    "claude": 161,
+    "gemini": 161
+   },
+   "nadir": {
+    "claude": 52.2,
+    "gemini": 52.2
+   },
+   "warnings": {
+    "claude": [],
+    "gemini": []
+   },
+   "length": {
+    "claude": 6601,
+    "gemini": 6601
+   },
+   "Umin": {
+    "claude": 9.51,
+    "gemini": 9.51
+   }
+  },
+  {
+   "id": "pi_beta03_step",
+   "label": "PI, β = 0.3, set point 81 → 100 at 30 min, meal at 200",
+   "inputs": {
+    "mode": "PI",
+    "beta": 0.3,
+    "setpoint_steps": [
+     [
+      30,
+      100
+     ]
+    ],
+    "meals": [
+     [
+      200,
+      1
+     ]
+    ]
+   },
+   "maxAbsDiffG": 0.0000957,
+   "maxAbsDiffU": 0.0000521,
+   "maxAbsDiffGm": 0.0000956,
+   "peak": {
+    "claude": 179,
+    "gemini": 179
+   },
+   "nadir": {
+    "claude": 45.7,
+    "gemini": 45.7
+   },
+   "warnings": {
+    "claude": [],
+    "gemini": []
+   },
+   "length": {
+    "claude": 6601,
+    "gemini": 6601
+   },
+   "Umin": {
+    "claude": 0.195,
+    "gemini": 0.194
+   }
+  },
+  {
+   "id": "sens_06",
+   "label": "p3 × 0.6 from t = 0",
+   "inputs": {
+    "sensitivity_change": [
+     0,
+     0.6
+    ]
+   },
+   "maxAbsDiffG": 0.0000231,
+   "maxAbsDiffU": 0.0000409,
+   "maxAbsDiffGm": 0.000023,
+   "peak": {
+    "claude": 164,
+    "gemini": 164
+   },
+   "nadir": {
+    "claude": 56.7,
+    "gemini": 56.7
+   },
+   "warnings": {
+    "claude": [],
+    "gemini": []
+   },
+   "length": {
+    "claude": 6601,
+    "gemini": 6601
+   },
+   "Umin": {
+    "claude": 16.7,
+    "gemini": 16.7
+   }
+  },
+  {
+   "id": "ff_under_over",
+   "label": "Bolus f = 1.5, estimate −50 %, late by 20 min",
+   "inputs": {
+    "ff_enabled": true,
+    "f_bolus": 1.5,
+    "est_error": -0.5,
+    "t_pre": -20
+   },
+   "maxAbsDiffG": 0.0000134,
+   "maxAbsDiffU": 0.00763,
+   "maxAbsDiffGm": 0.0000133,
+   "peak": {
+    "claude": 163,
+    "gemini": 163
+   },
+   "nadir": {
+    "claude": 36.9,
+    "gemini": 36.9
+   },
+   "warnings": {
+    "claude": [
+     "Glucose fell below 40 mg/dL. The model has no counter-regulation (no glucagon), so this part is qualitative only."
+    ],
+    "gemini": [
+     "Glucose dropped below 40 mg/dL: minimal model has no counter-regulation, so this part of the trajectory is qualitative only."
+    ]
+   },
+   "length": {
+    "claude": 6601,
+    "gemini": 6601
+   },
+   "Umin": {
+    "claude": 0,
+    "gemini": 0
+   }
+  },
+  {
+   "id": "aggressive_Kc3",
+   "label": "Kc × 3 (oscillatory)",
+   "inputs": {
+    "Kc": -1.28
+   },
+   "maxAbsDiffG": 0.0000114,
+   "maxAbsDiffU": 0.0000239,
+   "maxAbsDiffGm": 0.0000113,
+   "peak": {
+    "claude": 162,
+    "gemini": 162
+   },
+   "nadir": {
+    "claude": 39.1,
+    "gemini": 39.1
+   },
+   "warnings": {
+    "claude": [
+     "Glucose fell below 40 mg/dL. The model has no counter-regulation (no glucagon), so this part is qualitative only."
+    ],
+    "gemini": [
+     "Glucose dropped below 40 mg/dL: minimal model has no counter-regulation, so this part of the trajectory is qualitative only."
+    ]
+   },
+   "length": {
+    "claude": 6601,
+    "gemini": 6601
+   },
+   "Umin": {
+    "claude": 0,
+    "gemini": 0
+   }
+  },
+  {
+   "id": "dropout_at_0",
+   "label": "Dropout from t = 0 for 30 min",
+   "inputs": {
+    "fault": "dropout",
+    "t_fault": 0,
+    "dropout_duration": 30
+   },
+   "maxAbsDiffG": 0.0000271,
+   "maxAbsDiffU": 0.0000409,
+   "maxAbsDiffGm": 0.000027,
+   "peak": {
+    "claude": 163,
+    "gemini": 163
+   },
+   "nadir": {
+    "claude": 49.4,
+    "gemini": 49.4
+   },
+   "warnings": {
+    "claude": [],
+    "gemini": []
+   },
+   "length": {
+    "claude": 6601,
+    "gemini": 6601
+   },
+   "Umin": {
+    "claude": 8.6,
+    "gemini": 8.6
+   }
+  },
+  {
+   "id": "negative_drift",
+   "label": "Drift −20 mg/dL per h from 60 min",
+   "inputs": {
+    "fault": "drift",
+    "t_fault": 60,
+    "drift_rate": -20
+   },
+   "maxAbsDiffG": 0.00021,
+   "maxAbsDiffU": 0.000126,
+   "maxAbsDiffGm": 0.000209,
+   "peak": {
+    "claude": 271,
+    "gemini": 271
+   },
+   "nadir": {
+    "claude": 57.9,
+    "gemini": 57.9
+   },
+   "warnings": {
+    "claude": [],
+    "gemini": []
+   },
+   "length": {
+    "claude": 6601,
+    "gemini": 6601
+   },
+   "Umin": {
+    "claude": 0,
+    "gemini": 0
+   }
+  },
+  {
+   "id": "suspend_noff",
+   "label": "Suspend integral with feedforward OFF (should be a no-op)",
+   "inputs": {
+    "suspend_integral": true,
+    "suspend_extra": 60
+   },
+   "maxAbsDiffG": 0.0000271,
+   "maxAbsDiffU": 0.0000409,
+   "maxAbsDiffGm": 0.000027,
+   "peak": {
+    "claude": 163,
+    "gemini": 163
+   },
+   "nadir": {
+    "claude": 49.4,
+    "gemini": 49.4
+   },
+   "warnings": {
+    "claude": [],
+    "gemini": []
+   },
+   "length": {
+    "claude": 6601,
+    "gemini": 6601
+   },
+   "Umin": {
+    "claude": 8.6,
+    "gemini": 8.6
+   }
+  }
+ ],
+ "robustness": [
+  {
+   "label": "Kc = NaN",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "non-finite output",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "Kc = \"abc\" (string)",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "non-finite output",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "Kc = +0.5 (wrong sign)",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "t_end = 0",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 1,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "t_end = −10",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "threw",
+    "message": "Invalid typed array length: -99"
+   }
+  },
+  {
+   "label": "dt = 0",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "threw",
+    "message": "Invalid typed array length: Infinity"
+   }
+  },
+  {
+   "label": "Ts = 0",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "tauI = 0 (PID)",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "N = 0",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "sensor_delay = 1e6",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "sensor_lag = 0.2 (not allowed)",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "meals = null",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "meals = [[NaN, 1]]",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "setpoint_steps = [[60, −5]]",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "controller = \"xyz\"",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "fault = \"abc\"",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "sensitivity_change = [120, −1]",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  },
+  {
+   "label": "noise_sd = −3",
+   "claude": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 1,
+    "valid": true,
+    "UoutOfRange": false
+   },
+   "gemini": {
+    "outcome": "ok",
+    "length": 6601,
+    "warnings": 0,
+    "valid": true,
+    "UoutOfRange": false
+   }
+  }
+ ],
+ "speed": {
+  "claude": {
+   "default_660min_ms": 5.34,
+   "day_1440min_ms": 14.9,
+   "margins_ms": 2.4
+  },
+  "gemini": {
+   "default_660min_ms": 2.19,
+   "day_1440min_ms": 7.72,
+   "margins_ms": 0.834
+  }
+ }
+}
