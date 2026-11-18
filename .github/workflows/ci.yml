@@ -88,7 +88,10 @@ jobs:
           node tests/browser-smoke.mjs --base http://localhost:8000 --paths ${{ steps.has_site.outputs.paths }} --out smoke-results
           node tests/browser-smoke.mjs --base http://localhost:8000 --paths ${{ steps.has_site.outputs.paths }} --out smoke-results/dark --scheme dark
           # Claude's site defaults to dark whatever the device says; this run covers its light theme
-          if [ -f site/index.html ]; then node tests/browser-smoke.mjs --base http://localhost:8000 --paths "/?theme=light" --out smoke-results/site-light; fi
+          if [ -f site/index.html ]; then
+            node tests/browser-smoke.mjs --base http://localhost:8000 --paths "/?theme=light" --out smoke-results/site-light
+            mv "smoke-results/site-light/?theme=light" smoke-results/site-light/root   # '?' is not allowed in artifact file names
+          fi
       - name: Content test of Claude's site (charts show the right data), light + dark
         if: steps.has_site.outputs.run == 'true' && hashFiles('tests/browser-content.mjs') != ''
         run: |
@@ -178,6 +181,7 @@ jobs:
           node tests/browser-smoke.mjs --base "$BASE" --paths /,/gemini/ --out live-results
           node tests/browser-smoke.mjs --base "$BASE" --paths /,/gemini/ --out live-results/dark --scheme dark
           node tests/browser-smoke.mjs --base "$BASE" --paths "/?theme=light" --out live-results/site-light
+          mv "live-results/site-light/?theme=light" live-results/site-light/root   # '?' is not allowed in artifact file names
       - name: Content test on the live site (light + dark)
         env:
           PAGE_URL: ${{ needs.deploy.outputs.page_url }}

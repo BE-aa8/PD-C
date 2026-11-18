@@ -299,4 +299,6 @@ Written by Claude Code at the end of the session, from the session itself. Promp
 
 **Results (local, CDN served from local copies):** `npm test` 65/65; smoke test 0 failures on `/` (dark default), `/?theme=light` and `/gemini/`, with no console errors; content test 25/25 in both themes; extended check (all sliders, presets, manual mode) clean. Screenshots of every tab reviewed at 1280 and 375 px in both themes.
 
+- First CI run of Phase 1 (44421655694): all tests passed, but the screenshot upload failed because the light-theme smoke run saves into a folder named `?theme=light`, and `?` is not allowed in artifact file names; the deploy was therefore skipped. Fixed by renaming the folder before upload (both jobs).
+
 **Next step:** Andrew reviews Phase 1 on the live site; then Phase 2 (header, navigation, page containers, footer).
