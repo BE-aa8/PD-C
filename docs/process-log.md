@@ -91,6 +91,17 @@ Reconstructed by Claude Code at the end of the session from the session's own co
 - Gemini's back-calculation guard (Tt ≥ Ts) prevents a real divergence when τD is small (Ts/Tt > 2).
 - Gemini overstated one finding (it called the back-calculation formula an "algebraic error", though its own derivation shows it is correct), made two small arithmetic slips (Kp −4.505925 vs −4.506298; bolus 1390.13 vs 1390.09), and underestimated the D-hold error 12× (0.018 vs a measured 0.213 mg/dL).
 
-**What I accepted / changed / rejected, and why:** *(pending: Andrew's decisions go in `docs/critique-decisions.md`)*
+**What I accepted / changed / rejected, and why:**
+11. "approve all, go with your recommendations. let me know when i need to add the API key"
+- All 26 rows approved. For the two rows with a choice, I took Claude's recommendation: the least-squares fits are computed offline by the Python reference and shipped in `data.js` (row 7), and the Python MPC results are shown as a precomputed, labelled figure (row 19).
 
-**Next step:** Andrew approves or changes each row; then Claude fixes the two reference bugs (rows 3 and 13) and writes plan v2.
+### Part 5: plan v2 and the shared tests
+
+**What the AI produced:**
+- Fixed the two reference bugs Gemini found (set-point weighting, back-calculation Tt guard), with tests (100 Python tests).
+- `docs/plan-v2-final.md`: plan v1 + all approved critique items, re-targeted at the static website. Every numerical detail the two builds must agree on is pinned (PID and anti-windup, sensor, bolus, RK4 event order), plus the `model.js` API contract.
+- `tools/build_data.py` → `site/js/data.js` (parameters with sources, offline fits, empirical delay limits, precomputed PID vs MPC). `tools/build_expected.py` → `tests/expected.json` (25 golden closed-loop scenarios, 60 tuning cases, 4 margin cases). CI regenerates both and fails if they drift.
+- `tests/model.test.mjs` (`npm test`, grades `site/` and `site/gemini/`), self-tested with a throwaway replay stub: the exact reference passes 33/33; a 0.06 mg/dL error at one time point fails. `tests/browser-smoke.mjs` copied unchanged from separations.
+- `docs/build-prompt.md` (identical prompt for both models; only the output folder differs) and `docs/gemini-build/prompt.txt` (Gemini's copy).
+
+**Next step:** Andrew adds the `GEMINI_API_KEY` repository secret and runs the Gemini workflow (`models`, then `plan`). In parallel, Claude's website build runs in a **fresh** Claude Code session in plan mode, from `docs/build-prompt.md`.

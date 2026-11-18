@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Closing the Loop: artificial-pancreas process-control simulator, static teaching site (CHEE 4071 AI project)",
   "scripts": {
+    "data": "python3 tools/build_data.py",
     "expected": "python3 tools/build_expected.py",
     "test": "node --test tests/*.test.mjs"
   }

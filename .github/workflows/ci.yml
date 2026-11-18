@@ -28,13 +28,10 @@ jobs:
       - name: pytest (ap-sim)
         working-directory: ap-sim
         run: python -m pytest -q
+      - name: data.js is generated from the reference (no hand edits)
+        run: python3 tools/build_data.py --check
       - name: expected.json is generated from the reference (no hand edits)
-        run: |
-          if [ -f tools/build_expected.py ]; then
-            python3 tools/build_expected.py && git diff --exit-code tests/expected.json
-          else
-            echo "tools/build_expected.py not written yet, skipping."
-          fi
+        run: python3 tools/build_expected.py --check
 
   test:
     name: Model tests (npm test)

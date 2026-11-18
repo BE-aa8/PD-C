@@ -4,7 +4,7 @@ Runs only at sample instants (every Ts) and its output is held in between (ZOH).
 
 At sample k (measurement m_k, set point r_k, e_k = r_k - m_k):
 
-    P_k = Kc (beta r_k - m_k)
+    P_k = Kc [beta (r_k - y_nom) - (m_k - y_nom)]     (y_nom = G_basal; see note in _parts)
     S_k = S_{k-1} + e_k Ts                    (integral state, subject to anti-windup)
     I_k = Kc/tauI * S_k
     d_k = alpha d_{k-1} + (1-alpha)(m_k - m_{k-1})/Ts   (filtered derivative of MEASUREMENT)
@@ -25,7 +25,7 @@ Anti-windup
          (u_trial < U_min and Kc*e < 0).
 'backcalc' back-calculation: dI/dt = (Kc/tauI) e + (U - u)/Tt, i.e. with I = (Kc/tauI) S
          S_k = S_{k-1} + Ts [ e_k + tauI (U_k - u_k) / (Kc Tt) ],
-         Tt = sqrt(tauI tauD) (PID) or tauI (PI).  u_k is evaluated with
+         Tt = max(sqrt(tauI tauD), Ts) (PID) or tauI (PI).  u_k is evaluated with
          S_{k-1} + e_k Ts; the correction removes a fraction Ts/Tt of the excess per sample.
 'off'    no protection (insulin-stacking demo).
 """
@@ -49,8 +49,10 @@ class PIDConfig:
 
 
 class PID:
-    def __init__(self, cfg: PIDConfig, Ts: float, U_bias: float, U_min: float, U_max: float):
+    def __init__(self, cfg: PIDConfig, Ts: float, U_bias: float, U_min: float, U_max: float,
+                 y_nominal: float = 0.0):
         self.cfg = cfg
+        self.y_nom = y_nominal   # nominal output (G_basal) for set-point weighting
         self.Ts = Ts
         self.U_bias = U_bias
         self.U_min = U_min
@@ -70,7 +72,9 @@ class PID:
         if cfg.Tt is not None:
             self.Tt = cfg.Tt
         elif cfg.tauD > 0 and math.isfinite(cfg.tauI):
-            self.Tt = math.sqrt(cfg.tauI * cfg.tauD)
+            # Guard Tt >= Ts (Gemini critique, row 3): the discrete correction removes a fraction
+            # Ts/Tt of the excess per sample, and oscillates/diverges once Ts/Tt > 1 / > 2.
+            self.Tt = max(math.sqrt(cfg.tauI * cfg.tauD), Ts)
         else:
             self.Tt = cfg.tauI
 
@@ -81,7 +85,10 @@ class PID:
 
     def _parts(self, r: float, m: float, S: float) -> float:
         c = self.cfg
-        P = c.Kc * (c.beta * r - m)
+        # set-point weighting acts on deviations from the nominal steady state (Gemini critique,
+        # row 13): P = Kc[beta (r - y_nom) - (m - y_nom)].  Absolute beta*r - m gave a bump
+        # at steady state whenever beta != 1.
+        P = c.Kc * (c.beta * (r - self.y_nom) - (m - self.y_nom))
         I = 0.0 if not math.isfinite(c.tauI) else c.Kc / c.tauI * S
         D = -c.Kc * c.tauD * self.d
         return self.U_bias + P + I + D

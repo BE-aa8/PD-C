@@ -120,7 +120,7 @@ def simulate(cfg: SimConfig) -> Result:
     if cfg.controller == "pid":
         if cfg.pid is None:
             raise ValueError("controller='pid' needs cfg.pid")
-        pid = PID(cfg.pid, cfg.Ts, U_basal, U_lo, U_hi)
+        pid = PID(cfg.pid, cfg.Ts, U_basal, U_lo, U_hi, y_nominal=p.G_basal)
     elif cfg.controller == "mpc":
         from .mpc import MPC
         mpc = MPC(cfg.mpc, p, cfg.Ts, cfg.sensor.delay, U_lo, U_hi, cfg.meals, cfg.ff)

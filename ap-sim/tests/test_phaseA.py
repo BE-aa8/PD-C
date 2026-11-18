@@ -58,3 +58,42 @@ def test_leadlag_default_overdelivers_due_to_clipping():
     static = static_ff_gain(P) * 0.2 * 9.0 / 0.05
     assert np.all(r.U_ff >= 0) and np.all(r.U <= P.U_max + 1e-9)
     assert total > 1.3 * static
+
+
+# ---- Gemini critique fixes (critique-decisions rows 3 and 13) -----------------------------
+@pytest.mark.parametrize("beta", [0.0, 0.5, 1.0])
+def test_setpoint_weight_keeps_basal_steady_state(beta):
+    """Row 13: at basal steady state (r = m = G_basal) the controller must output U_basal for
+    any beta. Before the fix, beta = 0.5 gave 33.9 mU/min and drove glucose to 57 mg/dL."""
+    r = simulate(build_config(replace(BASE, beta=beta, meals=())))
+    assert np.allclose(r.U, P.U_basal, atol=1e-9)
+    assert np.allclose(r.G_true, P.G_basal, atol=1e-9)
+
+
+def test_setpoint_weight_only_scales_setpoint_kick():
+    """With beta = 0.5, a set-point step gives half the proportional kick of beta = 1."""
+    from apsim.controller import PID, PIDConfig
+    out = {}
+    for beta in (1.0, 0.5):
+        c = PID(PIDConfig(Kc=-0.4, tauI=70.0, tauD=0.0, beta=beta), 5.0, P.U_basal, P.U_min, P.U_max,
+                y_nominal=P.G_basal)
+        c.update(P.G_basal, P.G_basal)
+        U0 = c.U
+        out[beta] = c.update(P.G_basal - 20.0, P.G_basal) - U0
+    integral = -0.4 / 70.0 * (-20.0) * 5.0
+    assert out[1.0] - integral == pytest.approx(2 * (out[0.5] - integral))
+
+
+@pytest.mark.parametrize("tauD", [0.02, 0.05, 0.1, 0.5, 17.6])
+def test_backcalc_converges_for_small_tauD(tauD):
+    """Row 3: with Tt = max(sqrt(tauI tauD), Ts), back-calculation settles for any tauD.
+    Before the guard, tauD <= 0.05 gave a diverging oscillation of the integral state."""
+    from apsim.controller import PID, PIDConfig
+    c = PID(PIDConfig(Kc=-0.426, tauI=70.3, tauD=tauD, anti_windup="backcalc"), 5.0,
+            P.U_basal, P.U_min, P.U_max, y_nominal=P.G_basal)
+    assert c.Tt >= 5.0
+    S = []
+    for _ in range(200):
+        c.update(P.G_basal, 400.0)
+        S.append(c.S)
+    assert np.max(np.abs(np.diff(S[-20:]))) < 1e-3

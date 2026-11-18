@@ -1,0 +1,31 @@
+# Build prompt: website build (identical for Claude Code and Gemini)
+
+Give the model these files, in a **fresh session**, and start it in **plan mode**:
+1. `docs/plan-v2-final.md`
+2. `site/js/data.js`
+3. this prompt (everything below the line)
+
+Change only `<OUTPUT_DIR>`: `site/` for Claude Code, `site/gemini/` for Gemini. Record any clarifying questions the model asks, and answer both models the same way.
+
+---
+
+You are building the "Closing the Loop" artificial-pancreas control simulator: a static educational website for a 4th-year chemical engineering Process Dynamics and Control course (Seborg, Edgar, Mellichamp & Doyle, 4th ed., Example 23.3 / Exercise 23.6). The attached `docs/plan-v2-final.md` is the full specification. `site/js/data.js` holds every parameter (each with a citation), the offline least-squares fits, and precomputed reference results; use it as-is.
+
+Read only these files: `docs/plan-v2-final.md`, `site/js/data.js`, `tests/` (the tests that will grade your build), `package.json`, and `CLAUDE.md`. Do not read any other folder (in particular not `ap-sim/`, `site/` outside your output folder, or `docs/` other than the plan). Then propose your implementation plan before writing any code.
+
+Requirements:
+1. Build the website described in plan §9–§10: the `model.js` engine and the seven tabs. Tabs whose content comes later (AI Workflow, Video & Transcript, References) get clearly labeled placeholders.
+2. Put all output in `<OUTPUT_DIR>`. Do not create or edit files outside it, except that you may read `tests/` and `site/js/data.js`. Your model must import data from `<OUTPUT_DIR>js/data.js`: if that file does not exist, copy `site/js/data.js` there **unchanged**. Never edit `data.js`.
+3. `js/model.js` must follow the API contract in plan §9 exactly: the export names, every `DEFAULT_INPUTS` key and default (§9.1), and the result fields (§9.2–§9.4). Pure functions, no DOM. It must import in Node 18+ (`import { simulate, DEFAULT_INPUTS } from './js/model.js'`).
+4. Implement the numerics exactly as pinned in plan §4–§8: the PID algorithm and anti-windup (§5), the sensor (§6), the meal and bolus logic (§7), and the RK4 engine and event order (§8). Do not substitute a different integrator, event order, or anti-windup formula. Where the plan is silent, choose, and report your choice.
+5. Stack: plain HTML/CSS/JS (ES modules), Plotly 2.35.2 and KaTeX 0.16.11 from a CDN with pinned versions. No frameworks, no build step, no backend. It must work when served from a static folder, on phones (no horizontal scroll at 375 px), and in light and dark mode.
+6. Seven tabs, as in plan §10, with these labels: Overview, Simulator, Theory, Control Design, AI Workflow, Video & Transcript, References.
+7. Every calculation shown must have: the equation (KaTeX), its units, and a one-line physical interpretation (plan §10).
+8. Every calculation must feed at least one Plotly chart (plan §10, charts P1–P11), and charts must update live when sliders move. Mark the current operating point on the sweeps. Every slider must visibly change a chart or a result.
+9. **Do not go beyond a 4th-year ChemE undergraduate process-control level.** No QP-MPC in the browser, no in-browser curve fitting (plan §12).
+10. **Do not invent data.** Use only values in `data.js` or the plan. If you need a number that isn't there, stop and ask. The disclaimer "Educational process-control model of an illustrative textbook patient. Not medical advice. Not for dosing decisions." must appear on every page. No drug names, carb ratios, correction factors or dosing guidance.
+11. Invalid or extreme inputs must show a warning and never display NaN, undefined or Infinity.
+12. Include the presets from plan §10 (Simulator tab); the default preset loads `DEFAULT_INPUTS`.
+13. When finished, run `npm test` (it tests `<OUTPUT_DIR>js/model.js` against `tests/expected.json`) and fix failures. Then serve the site, open it in a browser, check every tab, equation, chart, and slider, and report what you checked.
+14. Report: the files created, test results, anything you could not do, and any assumptions you made.
+15. Commit your work with clear messages, and push it to the branch you are working on.

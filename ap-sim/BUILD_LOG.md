@@ -246,3 +246,15 @@ follows `docs/plan-gemini-workflow-claude.md`. Consequences for this folder:
 - The Streamlit app stays, as a working reference UI. The deployed site will be the static
   Netlify site, so NOTES item 7 (Streamlit Cloud deployment) no longer applies.
 - Test count after removing the runner tests: 91.
+
+## Gemini critique fixes (critique-decisions rows 3 and 13, approved 2026-11-18)
+- **Set-point weighting (row 13):** P = Kc[β(r − G_basal) − (m − G_basal)] (was Kc(β·r − m) in absolute
+  units, which bumped the controller output at steady state whenever β ≠ 1: β = 0.5 gave 33.9 mU/min instead
+  of 16.67, and glucose fell to 57 mg/dL with no meal). `PID` takes `y_nominal`; `simulate` passes G_basal.
+- **Back-calculation tracking time (row 3):** Tt = max(√(τI·τD), Ts) for PID (τI for PI). Without the guard,
+  τD ≤ 0.05 min gave Ts/Tt > 2 and a diverging integral oscillation while saturated.
+- Tests: β ∈ {0, 0.5, 1} keeps basal exactly; β halves only the set-point kick; back-calc settles for
+  τD ∈ {0.02 … 17.6}. 100 tests pass. Default presets (β = 1, Tt = 35 min) are unchanged.
+- Now the reference generates `site/js/data.js` (tools/build_data.py) and `tests/expected.json`
+  (tools/build_expected.py) for the website builds. Empirical delay limits (bisection ±0.25 min, range 0–120):
+  43.4 min (design θs = 10) and 27.9 min (θs = 0), vs continuous estimates 48.1 and 33.4.
