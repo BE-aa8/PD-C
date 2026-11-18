@@ -105,3 +105,21 @@ Reconstructed by Claude Code at the end of the session from the session's own co
 - `docs/build-prompt.md` (identical prompt for both models; only the output folder differs) and `docs/gemini-build/prompt.txt` (Gemini's copy).
 
 **Next step:** Andrew adds the `GEMINI_API_KEY` repository secret and runs the Gemini workflow (`models`, then `plan`). In parallel, Claude's website build runs in a **fresh** Claude Code session in plan mode, from `docs/build-prompt.md`.
+
+### Part 6: Gemini plan stage
+
+**Prompts (verbatim):**
+12. "im not sure how to run stage = models, but the api key should be added now" (Claude triggered `stage=models`; key works; models offered: gemini-2.5-pro, gemini-3.5-flash, gemini-3.1-flash-lite, auto)
+13. "run plan with 3.5-flash"
+14. "Budget $20 send it"
+
+**What the AI produced:**
+- Gemini plan run `20261118T171557Z` (requested gemini-3.5-flash; Google served gemini-3.8-flash plus a small gemini-3-flash-preview call): 6 min 38 s, 39 tool calls, no files changed, no reads of `ap-sim/` or Claude-side docs found in its logs. Plan in `docs/gemini-build/plan.md` on `gemini/pro`. It reproduces the pinned numerics of plan v2 and asked 3 questions.
+- Pessimistic cost estimate $7.44 (all 1.65M input tokens at $4/M; 1.51M were actually cached), which is over the $6 budget. At the separations comparison's price basis it is about $0.86 (unverified; check the AI Studio bill).
+- Claude found that Gemini's plan exposed an ambiguity in plan v2 §5: whether the integral term leaves the output while "frozen". Clarified in plan v2 (the term stays; only S stops changing) and in the build message, so both builds get the same rule.
+
+**What I decided, and why:**
+- Raised `BUDGET_USD` from 6 to **20**.
+- Approved Gemini's plan with Claude's drafted answers (sent as the build `message`): sweep resolution is Gemini's choice (keep it responsive), a toggle on P9 for unannounced/announced, and the §5 integral-term clarification.
+
+**Next step:** Gemini build stage; Claude's website build in a fresh session.

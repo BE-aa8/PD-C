@@ -99,9 +99,11 @@ P_k   = Kc · [ β·(r_k − y_nom) − (m_k − y_nom) ]                       
 d_k   = α·d_{k−1} + (1−α)·(m_k − m_{k−1})/Ts ,  α = τf/(τf + Ts), τf = τD/N   (α = 0 if τD = 0)
 D_k   = −Kc·τD·d_k                                                       (derivative on measurement)
 bumpless start: S_0 = 0, d_0 = 0, m_{−1} = m_0
-integral used?  integrate = (mode ≠ P) AND NOT frozen
+integrate = (mode ≠ P) AND NOT frozen            # whether S may change this sample
 S_trial = integrate ? S_{k−1} + e_k·Ts : S_{k−1}
-u(S)  = U_basal + P_k + (integral used ? (Kc/τI)·S : 0) + D_k
+u(S)  = U_basal + P_k + (mode ≠ P ? (Kc/τI)·S : 0) + D_k
+        # the integral TERM stays in the output whenever mode ≠ P, including while frozen;
+        # "frozen" only stops S from changing (clarified 2026-11-18 after Gemini's plan run)
 ```
 
 Anti-windup (judged on the **feedback output alone**, never on feedback + bolus `[C 5]`):

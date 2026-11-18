@@ -64,7 +64,7 @@ jobs:
           STAGE: ${{ inputs.stage }}
           MESSAGE: ${{ inputs.message }}
           MODEL: ${{ inputs.model }}
-          BUDGET_USD: "6"   # hard stop on estimated total Gemini spend; raise only with the user's OK
+          BUDGET_USD: "20"  # hard stop on estimated total Gemini spend; raised from 6 to 20 by Andrew on 2026-11-18 (plan run alone was estimated at $7.44)
         run: bash .github/scripts/run-gemini.sh
       - name: Commit and push the run to gemini/pro
         if: always()
