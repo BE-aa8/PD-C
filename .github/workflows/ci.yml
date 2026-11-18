@@ -10,6 +10,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch to test (blank = the branch this run was started on). Used to test gemini/pro, whose pushes come from a workflow and so don't trigger CI automatically."
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -20,6 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"   # the version the reference was verified on
@@ -38,6 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -54,13 +63,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Skip if no site has been built yet
+      - name: Skip if no site has been built yet; test only the builds that exist
         id: has_site
         run: |
-          if { [ -f site/index.html ] || [ -f site/gemini/index.html ]; } && [ -f tests/browser-smoke.mjs ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "No site or smoke test yet, skipping."; fi
+          P=""
+          [ -f site/index.html ] && P="/"
+          [ -f site/gemini/index.html ] && P="${P:+$P,}/gemini/"
+          if [ -n "$P" ] && [ -f tests/browser-smoke.mjs ]; then echo "run=true" >> "$GITHUB_OUTPUT"; echo "paths=$P" >> "$GITHUB_OUTPUT"; echo "Testing: $P"; else echo "No site or smoke test yet, skipping."; fi
       - name: Install Playwright + Chromium
         if: steps.has_site.outputs.run == 'true'
         run: |
@@ -71,8 +85,8 @@ jobs:
         run: |
           python3 -m http.server 8000 -d site >/dev/null 2>&1 &
           sleep 2
-          node tests/browser-smoke.mjs --base http://localhost:8000 --paths /,/gemini/ --out smoke-results
-          node tests/browser-smoke.mjs --base http://localhost:8000 --paths /,/gemini/ --out smoke-results/dark --scheme dark
+          node tests/browser-smoke.mjs --base http://localhost:8000 --paths ${{ steps.has_site.outputs.paths }} --out smoke-results
+          node tests/browser-smoke.mjs --base http://localhost:8000 --paths ${{ steps.has_site.outputs.paths }} --out smoke-results/dark --scheme dark
       - name: Job summary
         if: always() && steps.has_site.outputs.run == 'true'
         run: '[ -f smoke-results/report.md ] && cat smoke-results/report.md smoke-results/dark/report.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true'
