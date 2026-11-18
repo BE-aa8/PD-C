@@ -36,7 +36,7 @@ only the allowed files).
 | Charts that show wrong content (the smoke test can't see this) | none found | **P9 (PID vs MPC) shows no real data**: it reads `mpc.G_PID`, `mpc.G_MPC`, `U_PID`, `U_MPC`, keys that don't exist in `data.js` (`site/gemini/js/app.js:1160–1190`) | code; screenshot |
 | Other visible defects | none found | Block diagram drawn with **black filled triangles** (SVG paths without `fill="none"`, `index.html:582–629`); Bode axis shows `&omega;` / `&ang;` as literal text; P10 sweep uses `sensor_delay \|\| 10`, so a 0-min delay is swept as 10 min (`app.js:1236`); no current-τc marker on P10 | screenshot; code |
 | Follow-up fix prompts from Andrew | 0 for correctness; 1 layout request (charts above controls on phones) | 0 | process log |
-| Bugs the builder found and fixed itself | 2 (a fault-time slider that did nothing at drift rate 0; Theory bolus sliders that changed only text) | none reported | process log Part 8; Gemini's report |
+| Bugs the builder found and fixed itself | 2 (a fault-time slider that did nothing at drift rate 0; Theory bolus sliders that changed only text) | none reported | process log Part 9; Gemini's report |
 | Equations (rendered KaTeX blocks): Simulator / Theory / Control Design | **12 / 21 / 18** | **0 / 6 / 3** | smoke-test counts |
 | Plots: Simulator / Theory / Control Design | 6 / 3 / 3 | 3 (+P8 hidden until a run is saved) / 2 / 5 | smoke-test counts |
 | Sliders on Theory and Control Design | 4 and 4 (ΔU, bolus inputs; τc, θ, N, delay) | 0 and 0 (P4, P5, Bode, Nyquist only follow the Simulator) | smoke-test counts |

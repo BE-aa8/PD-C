@@ -138,22 +138,34 @@ Reconstructed by Claude Code at the end of the session from the session's own co
 
 **Next step:** Claude's website build in a fresh Claude Code session (plan mode, `docs/build-prompt.md`, output `site/`).
 
-### Part 8: Claude website build
+### Part 8: Claude website build started; deliverables plan
+
+**Prompts (verbatim):**
+15. "did you already use all of the $20? this is crazy, we build the whole separations website for like less that three dollars, what is making it so expensive this time?" (Claude explained that $46.28 is the script's deliberately pessimistic estimate; at the separations comparison's price basis the real cost is about $3.58)
+16. "oh okay that is fine carry on, do you need anything from me?"
+17. "you can start the new session, whenever you need anything from me just ask!"
+
+**What the AI produced:**
+- Claude started a **separate** Claude Code session (Opus 5.5, plan mode, from `main`, pushing to `claude/site-build`) with the build prompt from `docs/build-prompt.md` verbatim (output folder `site/`). `main` doesn't contain Gemini's site, so the build session can't see it. It waits in plan mode for Andrew's approval.
+- `docs/plan-deliverables-claude.md`: the plan for the remaining documents, the website content, the presentation, and the YouTube materials (draft, awaiting Andrew's approval).
+
+**Next step:** Andrew approves the build session's plan (answering any questions the same way Gemini's were answered) and the deliverables plan.
+### Part 9: Claude website build
 
 Written by Claude Code at the end of the session, from the session itself. Prompts are quoted verbatim.
 
 **Prompts (verbatim):**
-15. The build prompt from `docs/build-prompt.md` (output folder `site/`), delivered to a fresh Claude Code session started in plan mode. Not repeated here.
-16. Andrew approved the plan without changes.
-17. "Put the charts above the controls on mobile"
-18. "what's the next steps?"
-19. "yes, do steps 1 and 2" (step 1 = this process-log entry, step 2 = `docs/comparison.md`)
+18. The build prompt from `docs/build-prompt.md` (output folder `site/`), delivered to a fresh Claude Code session started in plan mode. Not repeated here.
+19. Andrew approved the plan without changes.
+20. "Put the charts above the controls on mobile"
+21. "what's the next steps?"
+22. "yes, do steps 1 and 2" (step 1 = this process-log entry, step 2 = `docs/comparison.md`)
 
 **What the AI produced:**
 - Claude Code (Opus 5.5; the session record confirms `claude-opus-5-5` served every turn): a plan written after reading only the allowed files (plan v2, `data.js`, `tests/`, `package.json`, `CLAUDE.md`). Plan v1 was off-limits, so Claude derived the ODEs, linearization, half rule and the three IMC formulas itself and checked each against the numbers in `tests/expected.json` before writing code.
 - `site/js/model.js` (commit `05d8709`): pure engine with the full §9 API. **`npm test` 33/33 on the first run**, no fixes.
 - `site/index.html`, `site/css/style.css`, `site/js/app.js` (commit `8636e2f`): the seven tabs, 22 presets, charts P1–P11 plus a bolus chart on Theory, equation · units · meaning cards, a live SVG block diagram, saved-run overlay, light/dark, AI Workflow / Video / References as placeholders.
-- Commit `ce6a77f`: charts above the controls at ≤ 900 px wide (prompt 17).
+- Commit `ce6a77f`: charts above the controls at ≤ 900 px wide (prompt 20).
 - Timing: session started 17:56 UTC, site committed 18:24 UTC (≈ 27 min including its own browser checks).
 
 **Choices Claude made where plan v2 is silent (reported, not asked):**
@@ -164,19 +176,19 @@ Written by Claude Code at the end of the session, from the session itself. Promp
 - Picking the drift fault with a zero rate starts at +10 mg/dL per h (the drift preset's value).
 
 **What I accepted / changed / rejected, and why:**
-- Accepted the plan as written. Asked for one layout change (prompt 17) because on a phone the controls came before every chart.
+- Accepted the plan as written. Asked for one layout change (prompt 20) because on a phone the controls came before every chart.
 
 **Problems hit:**
 - This container's proxy blocks the Plotly and KaTeX CDNs (HTTP 403). For testing only, Claude served the same pinned versions from local npm copies through a Playwright route; the site still loads them from the CDN. A copy of `tests/browser-smoke.mjs` with that route added was used; `tests/` was not changed.
 - Claude's own browser check (beyond the smoke test) found two bugs, both fixed before the commit: the fault-start slider did nothing for drift with a zero rate, and the Theory bolus sliders changed only text (a chart was added).
 - Final checks: smoke test 7 tabs, 10 sliders, 0 failures in light and dark, no horizontal scroll at 375 px; Claude's extra check moved all 40 Simulator sliders (with feedforward, faults, set point and sensitivity switched on) plus the 8 on Theory and Control Design, loaded every preset, and found no NaN, KaTeX errors or console errors.
-- The build prompt limited edits to `site/`, so this process-log entry was written afterwards (prompt 19), not during the build.
+- The build prompt limited edits to `site/`, so this process-log entry was written afterwards (prompt 22), not during the build.
 
-**Next step:** compare the two builds (Part 9).
+**Next step:** compare the two builds (Part 10).
 
-### Part 9: build comparison
+### Part 10: build comparison
 
-**Prompt (verbatim):** 19 above.
+**Prompt (verbatim):** 22 above.
 
 **What the AI produced:**
 - `docs/comparison.md`, laid out like the separations comparison: setup, results table, findings, fairness caveats, process lessons, and an empty "My conclusions" for Andrew.
