@@ -1,0 +1,192 @@
+
+> test
+> node --test tests/*.test.mjs
+
+TAP version 13
+# Subtest: data.js: every value has a known sourceId
+ok 1 - data.js: every value has a known sourceId
+  ---
+  duration_ms: 6.739178
+  ...
+# Subtest: claude build (site/js/model.js)
+ok 2 - claude build (site/js/model.js) # SKIP model.js not built yet
+  ---
+  duration_ms: 0.232544
+  type: 'suite'
+  ...
+# Subtest: gemini build (site/gemini/js/model.js)
+    # Subtest: exports the API contract
+    ok 1 - exports the API contract
+      ---
+      duration_ms: 7.770849
+      ...
+    # Subtest: DEFAULT_INPUTS match plan v2 §9.1
+    ok 2 - DEFAULT_INPUTS match plan v2 §9.1
+      ---
+      duration_ms: 0.802861
+      ...
+    # Subtest: linear model, nonlinear gain, half rule
+    ok 3 - linear model, nonlinear gain, half rule
+      ---
+      duration_ms: 0.694568
+      ...
+    # Subtest: IMC tuning (60 cases)
+    ok 4 - IMC tuning (60 cases)
+      ---
+      duration_ms: 2.030827
+      ...
+    # Subtest: stability margins (4 cases)
+    ok 5 - stability margins (4 cases)
+      ---
+      duration_ms: 9.705724
+      ...
+    # Subtest: scenario open_loop_meal_at_0: Analytic case: peak 166.15 mg/dL at t = 26.0 min (meal at t = 0)
+    ok 6 - scenario open_loop_meal_at_0: Analytic case: peak 166.15 mg/dL at t = 26.0 min (meal at t = 0)
+      ---
+      duration_ms: 25.387429
+      ...
+    # Subtest: scenario ex23_6d_no_delay: IMC-PID tuned for theta_s = 0, ideal sensor
+    ok 7 - scenario ex23_6d_no_delay: IMC-PID tuned for theta_s = 0, ideal sensor
+      ---
+      duration_ms: 24.986439
+      ...
+    # Subtest: scenario ex23_6e_feedback_only: Defaults: IMC-PID tuned for the 10-min sensor delay
+    ok 8 - scenario ex23_6e_feedback_only: Defaults: IMC-PID tuned for the 10-min sensor delay
+      ---
+      duration_ms: 21.350201
+      ...
+    # Subtest: scenario delay_unaware_tuning: Tuned for theta_s = 0 but the sensor delay is 10 min
+    ok 9 - scenario delay_unaware_tuning: Tuned for theta_s = 0 but the sensor delay is 10 min
+      ---
+      duration_ms: 13.996996
+      ...
+    # Subtest: scenario aggressive_tau_c_2: tau_c = 2 min
+    ok 10 - scenario aggressive_tau_c_2: tau_c = 2 min
+      ---
+      duration_ms: 14.541774
+      ...
+    # Subtest: scenario bolus_at_meal: Static bolus at the meal
+    ok 11 - scenario bolus_at_meal: Static bolus at the meal
+      ---
+      duration_ms: 16.18742
+      ...
+    # Subtest: scenario prebolus_15: 15-min pre-bolus (stays in band)
+    ok 12 - scenario prebolus_15: 15-min pre-bolus (stays in band)
+      ---
+      duration_ms: 26.640793
+      ...
+    # Subtest: scenario overestimate_40: +40 % meal estimate
+    ok 13 - scenario overestimate_40: +40 % meal estimate
+      ---
+      duration_ms: 20.309866
+      ...
+    # Subtest: scenario windup_off_2x: Anti-windup off, 2x meal
+    ok 14 - scenario windup_off_2x: Anti-windup off, 2x meal
+      ---
+      duration_ms: 25.800792
+      ...
+    # Subtest: scenario windup_clamp_2x: Clamping, 2x meal
+    ok 15 - scenario windup_clamp_2x: Clamping, 2x meal
+      ---
+      duration_ms: 25.060548
+      ...
+    # Subtest: scenario windup_backcalc_2x: Back-calculation, 2x meal
+    ok 16 - scenario windup_backcalc_2x: Back-calculation, 2x meal
+      ---
+      duration_ms: 14.753409
+      ...
+    # Subtest: scenario sp_step_minus20: Ex. 23.6(c), beta = 1
+    ok 17 - scenario sp_step_minus20: Ex. 23.6(c), beta = 1
+      ---
+      duration_ms: 17.853025
+      ...
+    # Subtest: scenario sp_step_minus20_beta_half: Set-point weighting on deviations (critique row 13)
+    ok 18 - scenario sp_step_minus20_beta_half: Set-point weighting on deviations (critique row 13)
+      ---
+      duration_ms: 14.330749
+      ...
+    # Subtest: scenario beta_half_steady_state: Must stay exactly at basal (critique row 13)
+    ok 19 - scenario beta_half_steady_state: Must stay exactly at basal (critique row 13)
+      ---
+      duration_ms: 14.694209
+      ...
+    # Subtest: scenario p_only_offset: P-only: steady-state offset
+    ok 20 - scenario p_only_offset: P-only: steady-state offset
+      ---
+      duration_ms: 25.853921
+      ...
+    # Subtest: scenario pi_mode: PI: tauD = 0
+    ok 21 - scenario pi_mode: PI: tauD = 0
+      ---
+      duration_ms: 25.725421
+      ...
+    # Subtest: scenario sensor_lag_5: First-order sensor lag 5 min plus 10-min delay
+    ok 22 - scenario sensor_lag_5: First-order sensor lag 5 min plus 10-min delay
+      ---
+      duration_ms: 21.679808
+      ...
+    # Subtest: scenario sensor_stuck_60: Stuck sensor at the meal
+    ok 23 - scenario sensor_stuck_60: Stuck sensor at the meal
+      ---
+      duration_ms: 13.522319
+      ...
+    # Subtest: scenario sensor_drift: +10 mg/dL per h drift
+    ok 24 - scenario sensor_drift: +10 mg/dL per h drift
+      ---
+      duration_ms: 13.97754
+      ...
+    # Subtest: scenario sensor_dropout: Dropout 100-130 min
+    ok 25 - scenario sensor_dropout: Dropout 100-130 min
+      ---
+      duration_ms: 13.182494
+      ...
+    # Subtest: scenario sensitivity_x1_5: p3 x 1.5 from t = 120 (plant-model mismatch)
+    ok 26 - scenario sensitivity_x1_5: p3 x 1.5 from t = 120 (plant-model mismatch)
+      ---
+      duration_ms: 20.724422
+      ...
+    # Subtest: scenario three_meals_24h: Three meals
+    ok 27 - scenario three_meals_24h: Three meals
+      ---
+      duration_ms: 54.2473
+      ...
+    # Subtest: scenario suspend_integral: Integral frozen during the bolus + 60 min
+    ok 28 - scenario suspend_integral: Integral frozen during the bolus + 60 min
+      ---
+      duration_ms: 22.130801
+      ...
+    # Subtest: scenario bolus_before_t0: Bolus scheduled at t = -15: delivered from t = 0 with a warning
+    ok 29 - scenario bolus_before_t0: Bolus scheduled at t = -15: delivered from t = 0 with a warning
+      ---
+      duration_ms: 4.907524
+      ...
+    # Subtest: scenario backcalc_small_tauD: Tt guard: Tt = max(sqrt(tauI tauD), Ts) (critique row 3)
+    ok 30 - scenario backcalc_small_tauD: Tt guard: Tt = max(sqrt(tauI tauD), Ts) (critique row 3)
+      ---
+      duration_ms: 3.415094
+      ...
+    # Subtest: simulate({}) uses DEFAULT_INPUTS
+    ok 31 - simulate({}) uses DEFAULT_INPUTS
+      ---
+      duration_ms: 3.395147
+      ...
+    # Subtest: seeded noise is reproducible (same seed -> identical, different seed -> different)
+    ok 32 - seeded noise is reproducible (same seed -> identical, different seed -> different)
+      ---
+      duration_ms: 38.727367
+      ...
+    1..32
+ok 3 - gemini build (site/gemini/js/model.js)
+  ---
+  duration_ms: 560.333413
+  type: 'suite'
+  ...
+1..3
+# tests 33
+# suites 2
+# pass 33
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 694.303933
