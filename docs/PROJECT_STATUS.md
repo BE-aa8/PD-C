@@ -1,5 +1,11 @@
 # PROJECT STATUS — Closing the Loop
 
+> **Update 2026-11-18 (workflow change):** the project now follows the separations pathway exactly
+> (`docs/plan-gemini-workflow-claude.md`): a static JS site on Netlify built by Claude (`site/`) and by
+> Gemini via GitHub Actions (`site/gemini/`), graded by shared tests generated from the Python reference
+> in `ap-sim/`. Gemini's critique is pasted from the Gemini web app. Rows below about Streamlit Cloud
+> deployment and the Phase A local runner are superseded. Paths in this audit refer to `ap-sim/`.
+
 **Audit date:** 2026-11-18 (statuses updated after Phase A) · **Audited commit:** `8087a7d` on `claude/pancreas-control-simulator-w1e3tl`
 **Method:** the repository and history were inspected directly. Statuses below come from what
 was observed, not from earlier progress reports.

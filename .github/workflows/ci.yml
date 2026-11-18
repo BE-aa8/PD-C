@@ -1,0 +1,88 @@
+name: CI
+
+# Runs on every push and pull request (same structure as the separations repo):
+#   1. Python reference (ap-sim/apsim) and its own tests: the independent reference that
+#      generates the expected values both website builds are graded against
+#   2. npm test: grades every build's site/**/js/model.js against tests/expected.json
+#      (skipped until the shared tests exist; they are written before either site build)
+#   3. browser smoke test of site/ and site/gemini/ (skipped until a site exists)
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reference:
+    name: Python reference + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"   # the version the reference was verified on
+      - name: Install
+        run: pip install -r ap-sim/requirements.txt
+      - name: pytest (ap-sim)
+        working-directory: ap-sim
+        run: python -m pytest -q
+      - name: expected.json is generated from the reference (no hand edits)
+        run: |
+          if [ -f tools/build_expected.py ]; then
+            python3 tools/build_expected.py && git diff --exit-code tests/expected.json
+          else
+            echo "tools/build_expected.py not written yet, skipping."
+          fi
+
+  test:
+    name: Model tests (npm test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Skip if the shared tests don't exist yet
+        id: has_tests
+        run: |
+          if ls tests/*.test.mjs >/dev/null 2>&1; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "No tests/*.test.mjs yet, skipping."; fi
+      - name: npm test
+        if: steps.has_tests.outputs.run == 'true'
+        run: npm test
+
+  browser:
+    name: Browser smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Skip if no site has been built yet
+        id: has_site
+        run: |
+          if { [ -f site/index.html ] || [ -f site/gemini/index.html ]; } && [ -f tests/browser-smoke.mjs ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "No site or smoke test yet, skipping."; fi
+      - name: Install Playwright + Chromium
+        if: steps.has_site.outputs.run == 'true'
+        run: |
+          npm install --no-save playwright@1.65.0
+          npx playwright install --with-deps chromium
+      - name: Serve site/ and run the smoke test (light + dark)
+        if: steps.has_site.outputs.run == 'true'
+        run: |
+          python3 -m http.server 8000 -d site >/dev/null 2>&1 &
+          sleep 2
+          node tests/browser-smoke.mjs --base http://localhost:8000 --paths /,/gemini/ --out smoke-results
+          node tests/browser-smoke.mjs --base http://localhost:8000 --paths /,/gemini/ --out smoke-results/dark --scheme dark
+      - name: Job summary
+        if: always() && steps.has_site.outputs.run == 'true'
+        run: '[ -f smoke-results/report.md ] && cat smoke-results/report.md smoke-results/dark/report.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true'
+      - name: Upload screenshots and report
+        if: always() && steps.has_site.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshots
+          path: smoke-results/
+          retention-days: 30

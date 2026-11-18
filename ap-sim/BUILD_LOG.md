@@ -230,3 +230,19 @@ deviation, and why. Numbers are from the code as committed; rerun `pytest` to re
   found and fixed during testing: printing a path outside the project crashed, and the captured
   request payload aliased the live history list.
 - Test count: 67 → **98**, all passing.
+
+## Workflow change (2026-11-18): separations pathway adopted
+At Andrew's instruction ("follow exactly what we did in the separations repo"), the project now
+follows `docs/plan-gemini-workflow-claude.md`. Consequences for this folder:
+- `ap-sim/` is now the **independent Python reference** for the two static-website builds
+  (`site/` by Claude, `site/gemini/` by Gemini). It will generate `tests/expected.json`.
+- Removed (still in git history): the Phase A local Gemini runner (`tools/gemini_run.py`,
+  `tests/test_gemini_runner.py`), `ai/GEMINI_RUNBOOK.md`, `ai/prompts/*` and
+  `ai/COMPARISON_INTERFACE.md`. These are superseded by `docs/gemini-critique-all-in-one.txt`
+  (web-app critique, as in separations) and, later, `docs/build-prompt.md` plus the `model.js`
+  API contract in plan v2.
+- Moved to the repo root `docs/`: `PLAN_v1_claude.md` → `docs/plan-v1-claude.md`,
+  `PROJECT_STATUS.md` → `docs/PROJECT_STATUS.md`.
+- The Streamlit app stays, as a working reference UI. The deployed site will be the static
+  Netlify site, so NOTES item 7 (Streamlit Cloud deployment) no longer applies.
+- Test count after removing the runner tests: 91.
