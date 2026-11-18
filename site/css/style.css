@@ -98,7 +98,10 @@ main { padding: 18px 0 30px; }
 .grid.two { grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
 .grid.three { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
 .sim-layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); align-items: start; }
-@media (max-width: 900px) { .sim-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) {
+  .sim-layout { grid-template-columns: minmax(0, 1fr); }
+  .sim-layout > .controls { order: 2; } /* charts first on narrow screens */
+}
 
 .panel, .card {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px;
