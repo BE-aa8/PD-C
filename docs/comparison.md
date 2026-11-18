@@ -128,6 +128,8 @@ Later changes to Claude's site (listed so the comparison stays honest):
   the engine (invalid set-point step, Kc > 0, unknown option names; this changes three rows of the robustness table in
   Claude's favour), β shown only when a set-point step exists, and a chart-content test (`tests/browser-content.mjs`).
   The default gains are still computed from `data.js`, not copied from the test file.
+- Redesign Phase 1 (`docs/plan-redesign-phase1-claude.md`, brief by ChatGPT in `docs/redesign-brief-chatgpt.md`): new
+  design tokens, self-hosted fonts, dark-by-default theme with a toggle, re-themed charts. Presentation only.
 
 ## 6. Process lessons
 - **"Renders" is not "correct":** the smoke test checks that each chart has an SVG, so a chart with no data passes.

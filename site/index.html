@@ -1,11 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Closing the Loop</title>
   <meta name="description" content="Interactive process-control simulator of an artificial pancreas (Seborg Ex. 23.3 / Exercise 23.6). Educational model of an illustrative textbook patient. Not medical advice.">
-  <meta name="color-scheme" content="light dark">
+  <meta name="color-scheme" content="dark light">
+  <script>
+    /* Theme before first paint: dark is the default; ?theme=light|dark or a saved choice overrides it. */
+    (function () {
+      var t = 'dark';
+      try { var saved = localStorage.getItem('ctl-theme'); if (saved === 'light' || saved === 'dark') t = saved; } catch (e) {}
+      try { var q = new URLSearchParams(location.search).get('theme'); if (q === 'light' || q === 'dark') t = q; } catch (e) {}
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
@@ -16,8 +27,13 @@
 <header class="site-header">
   <div class="wrap">
     <div class="brand">
+      <div class="brand-text">
       <h1>Closing the Loop</h1>
       <p class="sub">An artificial-pancreas control simulator · CHEE 4071 Process Dynamics and Control · Seborg Ex. 23.3 / Exercise 23.6</p>
+      </div>
+      <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false" title="Switch between dark and light">
+        <span class="dot" aria-hidden="true"></span><span class="theme-label">Light</span>
+      </button>
     </div>
     <p class="disclaimer" role="note"><strong>Educational process-control model of an illustrative textbook patient. Not medical advice. Not for dosing decisions.</strong></p>
     <nav class="tabs" role="tablist" aria-label="Sections">

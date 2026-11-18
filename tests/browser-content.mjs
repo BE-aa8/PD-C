@@ -4,7 +4,7 @@
 //
 // Usage:
 //   python3 -m http.server 8000 -d site &
-//   node tests/browser-content.mjs --base http://localhost:8000          # also: --scheme dark
+//   node tests/browser-content.mjs --base http://localhost:8000          # also: --theme light, --scheme dark
 // Exit code 1 if any check fails.
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -19,7 +19,9 @@ const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, arr) =>
   return acc;
 }, []));
 const BASE = (args.base || 'http://localhost:8000').replace(/\/$/, '');
-const SCHEME = args.scheme === 'dark' ? 'dark' : 'light';
+const SCHEME = args.scheme === 'dark' ? 'dark' : 'light';   // the device setting (the site defaults to dark regardless)
+const THEME = args.theme === 'light' ? 'light' : '';         // force the site theme with ?theme=light
+const Q = THEME ? `?theme=${THEME}` : '';
 const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, ok: !!ok, detail }); };
 const num = (txt) => parseFloat(String(txt).replace('−', '-').replace(/[^0-9.+-eE]/g, ''));
@@ -33,8 +35,10 @@ const page = await browser.newPage({ colorScheme: SCHEME, viewport: { width: 128
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 await setup(page);
-await page.goto(`${BASE}/#simulator`, { waitUntil: 'networkidle' });
+await page.goto(`${BASE}/${Q}#simulator`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1200);
+const theme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+check(`Theme on load is ${THEME || 'dark (the default)'}`, theme === (THEME || 'dark'), `data-theme = ${theme}`);
 const kpi = async (i) => num(await page.locator('#sim-kpis .kpi .v').nth(i).innerText());
 
 // 1. P1 shows simulate() for the default inputs; KPIs show metrics()
@@ -108,10 +112,34 @@ for (const cs of ['unannounced', 'announced']) {
 check('No page errors (desktop)', errors.length === 0, errors.join(' | '));
 await page.close();
 
+// 5b. Theme toggle: switches, re-themes the charts, and is remembered after a reload (fresh context, no ?theme)
+const tctx = await browser.newContext({ colorScheme: SCHEME, viewport: { width: 1280, height: 900 } });
+const tp = await tctx.newPage();
+await setup(tp);
+await tp.goto(`${BASE}/#simulator`, { waitUntil: 'networkidle' });
+await tp.waitForTimeout(1000);
+const p1Colour = () => tp.evaluate(() => document.getElementById('p1').data[0].line.color);
+const cssS1 = () => tp.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--s1').trim());
+const darkColour = await p1Colour();
+check('Fresh visit starts dark', (await tp.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'dark', '');
+await tp.locator('#theme-toggle').click();
+await tp.waitForTimeout(900);
+const lightTheme = await tp.evaluate(() => document.documentElement.getAttribute('data-theme'));
+const lightColour = await p1Colour();
+check('Toggle switches to light', lightTheme === 'light', `data-theme = ${lightTheme}`);
+check('P1 re-themes with the toggle', lightColour !== darkColour && lightColour === (await cssS1()), `${darkColour} → ${lightColour}`);
+await tp.reload({ waitUntil: 'networkidle' });
+await tp.waitForTimeout(800);
+check('Light choice remembered after reload', (await tp.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'light', '');
+await tp.locator('#theme-toggle').click();
+await tp.waitForTimeout(500);
+check('Toggle switches back to dark', (await tp.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'dark', '');
+await tctx.close();
+
 // 6. Phones: the floating button reaches the controls; no horizontal scroll
 const m = await browser.newPage({ colorScheme: SCHEME, viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
 await setup(m);
-await m.goto(`${BASE}/#simulator`, { waitUntil: 'networkidle' });
+await m.goto(`${BASE}/${Q}#simulator`, { waitUntil: 'networkidle' });
 await m.waitForTimeout(1200);
 check('Phone: floating Controls button visible', await m.locator('#jump-btn').isVisible(), '');
 await m.locator('#jump-btn').click();
@@ -124,7 +152,7 @@ await m.close();
 await browser.close();
 
 const failed = results.filter((r) => !r.ok);
-console.log(`# Content test (${SCHEME}) — ${BASE}/`);
+console.log(`# Content test (site theme ${THEME || 'dark default'}, device ${SCHEME}) — ${BASE}/`);
 for (const r of results) console.log(`${r.ok ? '✅' : '❌'} ${r.name}${r.detail && !r.ok ? ` — ${r.detail}` : ''}`);
 console.log(`${results.length - failed.length}/${results.length} passed`);
 process.exit(failed.length ? 1 : 0);

@@ -43,17 +43,22 @@ function card({ title, tex, units, meaning, extra = '', id = '' }) {
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const C = () => ({
   s1: css('--s1'), s2: css('--s2'), s3: css('--s3'), s4: css('--s4'), s5: css('--s5'), s6: css('--s6'), s7: css('--s7'), s8: css('--s8'),
-  text: css('--text'), text2: css('--text-2'), muted: css('--muted'), grid: css('--grid'), band: css('--band'), surface: css('--surface'),
+  text: css('--text'), text2: css('--text-2'), muted: css('--text-3'), grid: css('--grid'), band: css('--band'), surface: css('--surface'),
+  line: css('--line-strong'), elev: css('--surface-elev'), accent: css('--accent'), data: css('--data'), warn: css('--warn'), crit: css('--crit'),
 });
+const FONT_BODY = 'Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
 function baseLayout(extra = {}) {
   const c = C();
-  const ax = { gridcolor: c.grid, zeroline: false, linecolor: c.grid, tickcolor: c.grid, automargin: true, title: { font: { size: 12, color: c.text2 } } };
+  const ax = {
+    gridcolor: c.grid, gridwidth: 1, zeroline: false, showline: true, linecolor: c.line, linewidth: 1, ticks: 'outside', ticklen: 4,
+    tickcolor: c.line, tickfont: { size: 11, color: c.muted }, automargin: true, title: { font: { size: 12, color: c.text2 }, standoff: 10 },
+  };
   const lay = {
     paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-    font: { color: c.text, family: 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif', size: 12 },
+    font: { color: c.text, family: FONT_BODY, size: 12 },
     margin: { l: 56, r: 14, t: 30, b: 44 },
-    legend: { orientation: 'h', x: 0, y: 1.02, yanchor: 'bottom', font: { size: 11 }, bgcolor: 'rgba(0,0,0,0)' },
-    hovermode: 'x unified', hoverlabel: { bgcolor: c.surface, font: { color: c.text } },
+    legend: { orientation: 'h', x: 0, y: 1.02, yanchor: 'bottom', font: { size: 11, color: c.text2 }, bgcolor: 'rgba(0,0,0,0)' },
+    hovermode: 'x unified', hoverlabel: { bgcolor: c.elev, bordercolor: c.line, font: { color: c.text, family: FONT_BODY, size: 12 } },
     xaxis: { ...ax }, yaxis: { ...ax },
   };
   for (const [k, v] of Object.entries(extra)) {
@@ -437,7 +442,7 @@ function renderSimulator() {
   ], baseLayout({ xaxis: { title: { text: 'time (min)' }, range: [0, tEnd] }, yaxis: { title: { text: 'U (mU/min)' }, rangemode: 'tozero' } }));
 
   // P3
-  plot('p3', [{ x: t, y: decimate(r.D), name: 'D(t)', mode: 'lines', line: { color: c.s4, width: 2 }, fill: 'tozeroy', fillcolor: c.band, hovertemplate: '%{y:.2f} mg/dL/min' }],
+  plot('p3', [{ x: t, y: decimate(r.D), name: 'D(t)', mode: 'lines', line: { color: c.s3, width: 2 }, fill: 'tozeroy', fillcolor: c.band, hovertemplate: '%{y:.2f} mg/dL/min' }],
     baseLayout({ showlegend: false, xaxis: { title: { text: 'time (min)' }, range: [0, tEnd] }, yaxis: { title: { text: 'D (mg/dL/min)' }, rangemode: 'tozero' } }));
 
   renderSaved();
@@ -454,7 +459,7 @@ function presetLabel() {
 }
 function renderSaved() {
   const c = C();
-  const cols = [c.s3, c.s4, c.s5, c.s7];
+  const cols = [c.s3, c.s4, c.s5, c.s6];
   const r = lastResult;
   const traces = savedRuns.map((s, k) => ({ x: s.t, y: s.G, name: `#${k + 1} ${s.label}`.slice(0, 60), mode: 'lines', line: { color: cols[k], width: 2 }, hovertemplate: '%{y:.1f}' }));
   if (r) traces.push({ x: decimate(r.t), y: decimate(r.G), name: 'Current run', mode: 'lines', line: { color: c.s1, width: 2.5 }, hovertemplate: '%{y:.1f}' });
@@ -665,7 +670,7 @@ function renderTheory() {
     { x: ts, y: ts.map((t) => M.sopdtStep(t, hr.sopdt, dU)), name: 'Half-rule SOPDT', mode: 'lines', line: { color: c.s3, width: 2, dash: 'dash' } },
     { x: ts, y: ts.map((t) => M.fopdtStep(t, hr.fopdt, dU)), name: 'Half-rule FOPDT', mode: 'lines', line: { color: c.s4, width: 2, dash: 'dash' } },
     { x: ts, y: ts.map((t) => M.sopdtStep(t, fs, dU)), name: 'Fit SOPDT', mode: 'lines', line: { color: c.s5, width: 2, dash: 'dot' } },
-    { x: ts, y: ts.map((t) => M.fopdtStep(t, ff, dU)), name: 'Fit FOPDT', mode: 'lines', line: { color: c.s7, width: 2, dash: 'dot' } },
+    { x: ts, y: ts.map((t) => M.fopdtStep(t, ff, dU)), name: 'Fit FOPDT', mode: 'lines', line: { color: c.s6, width: 2, dash: 'dot' } },
   ], baseLayout({ xaxis: { title: { text: 'time after step (min)' } }, yaxis: { title: { text: 'ΔG (mg/dL)' } } }));
 
   set('th-ff', card({
@@ -875,7 +880,7 @@ function renderDesign() {
       { x: circ.map((p) => p[0]), y: circ.map((p) => p[1]), name: 'unit circle', mode: 'lines', line: { color: c.muted, width: 1, dash: 'dot' }, hoverinfo: 'skip' },
       { x: n1.map((p) => p[0]), y: n1.map((p) => p[1]), name: `L, θs=${fmt(theta, 1)}`, mode: 'lines', line: { color: c.s1, width: 2 } },
       { x: n0.map((p) => p[0]), y: n0.map((p) => p[1]), name: 'delay-free', mode: 'lines', line: { color: c.s2, width: 2, dash: 'dash' } },
-      { x: [-1], y: [0], name: '−1 point', mode: 'markers', marker: { symbol: 'x', size: 12, color: c.s8 } },
+      { x: [-1], y: [0], name: '−1 point', mode: 'markers', marker: { symbol: 'x', size: 12, color: c.crit } },
     ], baseLayout({ hovermode: 'closest', xaxis: { title: { text: 'Re L' }, range: [-2.5, 1], zeroline: true, zerolinecolor: c.grid }, yaxis: { title: { text: 'Im L' }, range: [-2.5, 1], zeroline: true, zerolinecolor: c.grid, scaleanchor: 'x' } }));
   } else {
     plot('p6', [], baseLayout({ annotations: [{ text: 'Open loop selected: no feedback loop to analyse', showarrow: false, xref: 'paper', yref: 'paper', x: 0.5, y: 0.5 }], xaxis: { visible: false }, yaxis: { visible: false } }));
@@ -963,9 +968,24 @@ function init() {
   });
   document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => { showTab(b.dataset.goto); window.scrollTo(0, 0); }));
   window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
-  const mq = window.matchMedia('(prefers-color-scheme: dark)');
-  const onScheme = () => { for (const k of Object.keys(dirty)) dirty[k] = true; renderTab(activeTab); };
-  if (mq.addEventListener) mq.addEventListener('change', onScheme);
+  // theme: dark by default (set in <head> before paint); the toggle switches and remembers the choice
+  const root = document.documentElement;
+  const toggle = document.getElementById('theme-toggle');
+  const syncToggle = () => {
+    const light = root.getAttribute('data-theme') === 'light';
+    toggle.setAttribute('aria-pressed', String(light));
+    toggle.querySelector('.theme-label').textContent = light ? 'Dark' : 'Light';
+    toggle.title = light ? 'Switch to the dark theme' : 'Switch to the light theme';
+  };
+  toggle.addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('ctl-theme', next); } catch (e) { /* private mode: the choice lasts for this page only */ }
+  });
+  // charts read colours from CSS variables at render time, so re-render everything when the theme changes
+  new MutationObserver(() => { syncToggle(); for (const k of Object.keys(dirty)) dirty[k] = true; renderTab(activeTab); })
+    .observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  syncToggle();
   showTab(location.hash ? location.hash.slice(1) : 'overview');
 }
 

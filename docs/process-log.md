@@ -278,3 +278,25 @@ Written by Claude Code at the end of the session, from the session itself. Promp
 - Not committed (in `dist/`): `chatgpt-ux.zip` with the brief, `chatgpt-ux-bundle.txt` (brief + `index.html`, `style.css`, `app.js`) and 12 current screenshots (desktop light/dark, phone).
 
 **Next step:** Andrew gives ChatGPT the brief and the zip, brings back its plan; Claude reviews it against the tests and rules, then implements it in phases (plan mode first).
+
+### Part 15: redesign brief from ChatGPT; Phase 1 (design foundation)
+
+**Prompts (verbatim):**
+29. Andrew pasted ChatGPT's full redesign brief ("CLOSING THE LOOP — COMPLETE UI/UX REDESIGN", 9 parts, 7 phases), saved verbatim as `docs/redesign-brief-chatgpt.md`. Its first task: audit the code and present a Phase 1 plan before changing anything.
+30. Answer to Claude's question on the theme: "Dark by default + toggle (Recommended)". Then approved the plan (`docs/plan-redesign-phase1-claude.md`).
+
+**Claude's audit, including where the brief didn't match the code** (to settle in later phases): there is no "?" help toggle on this site (that was the separations site); there are no photos and none may be stock, patient or device imagery, so the "cinematic" hero visual is proposed as SVG/canvas drawn from the model's real trajectories (to confirm at Phase 3); the brief's Theory chapter list renames today's sections (content kept either way); fonts are self-hosted instead of loaded from Google.
+
+**What the AI produced (Phase 1, presentation only):**
+- `site/css/style.css` rewritten as a design system: theme-independent tokens (fluid type scale with `clamp()`, 4-px spacing, radii 24/18/14/10, three shadow levels, motion durations with a `prefers-reduced-motion` override), dark tokens (default) and light tokens from the brief, aliases so older rules and `app.js` keep working, and every existing component re-skinned (tabs with an animated underline, pill segmented controls and buttons, cards, KPI tiles, callouts, tables, the block diagram). Same markup and layout.
+- **Contrast:** in light mode the brief's accent, blue, amber and red reach only 3.4–4.5:1 against the background, below the 4.5:1 that WCAG AA requires for text. They are kept for fills and lines, and darker `--*-ink` variants carry text. Every text token now passes AA on every surface in both themes (checked by script).
+- **Chart palette:** the brief's soft colours failed the dataviz palette checker as chart lines (too pale and gray to tell apart). Six series were derived from the same hues in OKLCH (green, blue, amber, violet, red, teal) and pass in both themes; one dark-mode pair is in the "secondary encoding" band, and the only chart that shows six series already uses dashed and dotted lines.
+- **Fonts:** Inter (body) and Manrope (display), variable `woff2`, self-hosted in `site/fonts/` with their SIL OFL licences; latin, latin-ext and Greek subsets (the UI uses τ, θ, β).
+- **Theme:** dark for every first visit; a header toggle switches to light and is remembered (`localStorage`); `?theme=light|dark` in the URL also works. Set before first paint by a small inline script. Charts re-theme instantly (a `MutationObserver` on the theme attribute).
+- **Tests:** the content test now checks the default theme, the toggle, the remembered choice after reload, and that P1 re-themes (25 checks), and can run with `--theme light`. CI adds a smoke run of `/?theme=light`, because the site no longer follows the device's light/dark setting.
+
+**Problems hit and fixed during Phase 1:** the KPI values wrapped onto two lines at the new display size (resized; checked at 1280, 1024, 768 and 375 px); the Control Design tuning group showed a raw browser `▼` marker (group styles now apply everywhere); the theme toggle wrapped below the title on phones.
+
+**Results (local, CDN served from local copies):** `npm test` 65/65; smoke test 0 failures on `/` (dark default), `/?theme=light` and `/gemini/`, with no console errors; content test 25/25 in both themes; extended check (all sliders, presets, manual mode) clean. Screenshots of every tab reviewed at 1280 and 375 px in both themes.
+
+**Next step:** Andrew reviews Phase 1 on the live site; then Phase 2 (header, navigation, page containers, footer).

@@ -87,6 +87,8 @@ jobs:
           sleep 2
           node tests/browser-smoke.mjs --base http://localhost:8000 --paths ${{ steps.has_site.outputs.paths }} --out smoke-results
           node tests/browser-smoke.mjs --base http://localhost:8000 --paths ${{ steps.has_site.outputs.paths }} --out smoke-results/dark --scheme dark
+          # Claude's site defaults to dark whatever the device says; this run covers its light theme
+          if [ -f site/index.html ]; then node tests/browser-smoke.mjs --base http://localhost:8000 --paths "/?theme=light" --out smoke-results/site-light; fi
       - name: Content test of Claude's site (charts show the right data), light + dark
         if: steps.has_site.outputs.run == 'true' && hashFiles('tests/browser-content.mjs') != ''
         run: |
@@ -94,7 +96,7 @@ jobs:
           python3 -m http.server 8001 -d site >/dev/null 2>&1 &
           sleep 2
           node tests/browser-content.mjs --base http://localhost:8001 | tee -a "$GITHUB_STEP_SUMMARY"
-          node tests/browser-content.mjs --base http://localhost:8001 --scheme dark | tee -a "$GITHUB_STEP_SUMMARY"
+          node tests/browser-content.mjs --base http://localhost:8001 --theme light | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Job summary
         if: always() && steps.has_site.outputs.run == 'true'
         run: '[ -f smoke-results/report.md ] && cat smoke-results/report.md smoke-results/dark/report.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true'
@@ -175,6 +177,7 @@ jobs:
           BASE="${PAGE_URL%/}"
           node tests/browser-smoke.mjs --base "$BASE" --paths /,/gemini/ --out live-results
           node tests/browser-smoke.mjs --base "$BASE" --paths /,/gemini/ --out live-results/dark --scheme dark
+          node tests/browser-smoke.mjs --base "$BASE" --paths "/?theme=light" --out live-results/site-light
       - name: Content test on the live site (light + dark)
         env:
           PAGE_URL: ${{ needs.deploy.outputs.page_url }}
@@ -182,7 +185,7 @@ jobs:
           BASE="${PAGE_URL%/}"
           set -o pipefail
           node tests/browser-content.mjs --base "$BASE" | tee -a "$GITHUB_STEP_SUMMARY"
-          node tests/browser-content.mjs --base "$BASE" --scheme dark | tee -a "$GITHUB_STEP_SUMMARY"
+          node tests/browser-content.mjs --base "$BASE" --theme light | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Job summary
         if: always()
         run: |
