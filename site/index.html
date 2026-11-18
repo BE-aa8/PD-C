@@ -92,6 +92,7 @@
     <div class="sim-layout">
       <aside class="panel controls" id="sim-controls" aria-label="Simulator inputs"></aside>
       <div>
+        <div id="sim-top"></div>
         <div id="sim-warnings" class="warnings" aria-live="polite"></div>
         <div class="row" style="margin-bottom:8px">
           <span id="sim-badge" class="badge"></span>
@@ -179,6 +180,8 @@
     </div>
   </section>
 </main>
+
+<button type="button" id="jump-btn" class="jump-btn" hidden aria-controls="sim-controls">⚙ Controls</button>
 
 <footer class="site-footer">
   <div class="wrap">

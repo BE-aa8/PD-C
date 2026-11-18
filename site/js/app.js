@@ -77,6 +77,7 @@ const BASE = {
   ff_enabled: false, f_bolus: 1, est_error: 0, t_pre: 0, suspend_integral: false, suspend_extra: 0,
   sensor_delay: 10, sensor_lag: 0, noise_sd: 0, seed: 0, fault: 'none', t_fault: 60, drift_rate: 0, dropout_duration: 30,
   sp_on: false, sp_t: 60, sp_val: 61, sens_on: false, sens_t: 120, sens_factor: 1.5, saturation: true, t_end: 660,
+  tuning_mode: 'imc', Kc_man: null, tauI_man: null, tauD_man: null,
   dU: 1, band: 'seborg', mpc_case: 'unannounced',
 };
 const PRESETS = [
@@ -113,8 +114,14 @@ function mealsOf(s) {
   if (s.meal_plan === 'three') return [[480, s.meal_mult], [780, s.meal_mult], [1140, s.meal_mult]];
   return [[s.meal_t, s.meal_mult]];
 }
-function inputsOf(s) {
+// Controller gains actually used: IMC (from τc) or the manual sliders.
+function gainsOf(s) {
   const tu = tuningOf(s);
+  if (s.tuning_mode !== 'manual' || !fin(s.Kc_man)) return tu;
+  return { Kc: s.Kc_man, tauI: s.tauI_man, tauD: s.tauD_man, theta_total: tu.theta_total };
+}
+function inputsOf(s) {
+  const tu = gainsOf(s);
   return {
     t_end: s.t_end, dt: 0.1, Ts: 5,
     controller: s.controller, mode: s.mode, Kc: tu.Kc, tauI: tu.tauI, tauD: tu.tauD,
@@ -131,7 +138,7 @@ function inputsOf(s) {
 }
 // effective controller settings used by the simulation (mode applied)
 function effective(s) {
-  const tu = tuningOf(s);
+  const tu = gainsOf(s);
   return { Kc: tu.Kc, tauI: s.mode === 'P' ? null : tu.tauI, tauD: s.mode === 'PID' ? tu.tauD : 0, N: s.N, theta_total: tu.theta_total };
 }
 const bandOf = (s) => (s.band === 'clinical' ? { low: DATA.clinicalBand.value[0], high: DATA.clinicalBand.value[1], name: '70–180 mg/dL' }
@@ -142,19 +149,31 @@ const MODEL_OPTS = [
   ['fit_sopdt', 'SOPDT fit → PID (default)'], ['half_sopdt', 'Half-rule SOPDT → PID'],
   ['fit_fopdt_pid', 'FOPDT fit → PID'], ['fit_fopdt_pi', 'FOPDT fit → PI'], ['half_fopdt_pi', 'Half-rule FOPDT → PI'],
 ];
+const TUNING_MODE_ITEM = (cond) => ({ key: 'tuning_mode', type: 'seg', label: 'Tuning', opts: [['imc', 'IMC (from τc)'], ['manual', 'Manual gains']], show: cond || undefined });
+const MANUAL_ITEMS = (cond) => {
+  const c = cond || (() => true);
+  return [
+    { key: 'Kc_man', type: 'range', label: 'Kc (mU/min per mg/dL)', min: -2, max: 0.5, step: 0.01, unit: '', d: 3, show: (s) => c(s) && s.tuning_mode === 'manual' },
+    { key: 'tauI_man', type: 'range', label: 'τI integral time', min: 5, max: 300, step: 1, unit: 'min', d: 1, show: (s) => c(s) && s.tuning_mode === 'manual' && s.mode !== 'P' },
+    { key: 'tauD_man', type: 'range', label: 'τD derivative time', min: 0, max: 60, step: 0.5, unit: 'min', d: 1, show: (s) => c(s) && s.tuning_mode === 'manual' && s.mode === 'PID' },
+  ];
+};
 const SIM_SPEC = [
-  { legend: 'Preset', items: [
+  { legend: 'Preset', openMobile: true, items: [
     { key: 'preset', type: 'select', label: 'Scenario', opts: [['custom', 'Custom (modified)'], ...PRESETS.map((p) => [p.id, p.label])] },
   ] },
-  { legend: 'Controller', items: [
+  { legend: 'Controller', openMobile: true, items: [
     { key: 'controller', type: 'select', label: 'Loop', opts: [['pid', 'Closed loop (PID)'], ['none', 'Open loop (basal infusion only)']] },
     { key: 'mode', type: 'seg', label: 'Mode', opts: [['P', 'P'], ['PI', 'PI'], ['PID', 'PID']], show: (s) => s.controller === 'pid' },
-    { key: 'model', type: 'select', label: 'Tuning model (IMC)', opts: MODEL_OPTS, show: (s) => s.controller === 'pid' },
-    { key: 'tau_c', type: 'range', label: 'τc closed-loop time constant', min: 2, max: 100, step: 1, unit: 'min', d: 0, show: (s) => s.controller === 'pid' },
-    { key: 'theta_design', type: 'range', label: 'Sensor delay assumed in tuning', min: 0, max: 40, step: 0.5, unit: 'min', d: 1, show: (s) => s.controller === 'pid' },
-    { key: 'include_zoh', type: 'check', label: 'Add Ts/2 (ZOH) to θ in tuning', show: (s) => s.controller === 'pid' },
+    TUNING_MODE_ITEM((s) => s.controller === 'pid'),
+    { key: 'model', type: 'select', label: 'Tuning model (IMC)', opts: MODEL_OPTS, show: (s) => s.controller === 'pid' && s.tuning_mode !== 'manual' },
+    { key: 'tau_c', type: 'range', label: 'τc closed-loop time constant', min: 2, max: 100, step: 1, unit: 'min', d: 0, show: (s) => s.controller === 'pid' && s.tuning_mode !== 'manual' },
+    { key: 'theta_design', type: 'range', label: 'Sensor delay assumed in tuning', min: 0, max: 40, step: 0.5, unit: 'min', d: 1, show: (s) => s.controller === 'pid' && s.tuning_mode !== 'manual' },
+    { key: 'include_zoh', type: 'check', label: 'Add Ts/2 (ZOH) to θ in tuning', show: (s) => s.controller === 'pid' && s.tuning_mode !== 'manual' },
+    ...MANUAL_ITEMS((s) => s.controller === 'pid'),
     { key: 'N', type: 'range', label: 'Derivative filter N', min: 2, max: 20, step: 1, unit: '', d: 0, show: (s) => s.controller === 'pid' && s.mode === 'PID' },
-    { key: 'beta', type: 'range', label: 'Set-point weight β', min: 0, max: 1, step: 0.05, unit: '', d: 2, show: (s) => s.controller === 'pid' },
+    // β only weights set-point changes, so it is shown only when there is a set-point step to act on
+    { key: 'beta', type: 'range', label: 'Set-point weight β', min: 0, max: 1, step: 0.05, unit: '', d: 2, show: (s) => s.controller === 'pid' && s.sp_on },
     { key: 'anti_windup', type: 'select', label: 'Anti-windup', opts: [['clamp', 'Clamping (conditional integration)'], ['backcalc', 'Back-calculation'], ['off', 'Off']], show: (s) => s.controller === 'pid' && s.mode !== 'P' },
   ] },
   { legend: 'Meal disturbance', items: [
@@ -193,11 +212,13 @@ const SIM_SPEC = [
 ];
 const DESIGN_SPEC = [
   { legend: 'Tuning inputs (shared with the Simulator)', items: [
-    { key: 'model', type: 'select', label: 'Reduced model → controller', opts: MODEL_OPTS },
-    { key: 'tau_c', type: 'range', label: 'τc closed-loop time constant', min: 2, max: 100, step: 1, unit: 'min', d: 0 },
-    { key: 'theta_design', type: 'range', label: 'Sensor delay assumed in tuning', min: 0, max: 40, step: 0.5, unit: 'min', d: 1 },
-    { key: 'include_zoh', type: 'check', label: 'Add Ts/2 (ZOH) to θ' },
+    TUNING_MODE_ITEM(null),
+    { key: 'model', type: 'select', label: 'Reduced model → controller', opts: MODEL_OPTS, show: (s) => s.tuning_mode !== 'manual' },
+    { key: 'tau_c', type: 'range', label: 'τc closed-loop time constant', min: 2, max: 100, step: 1, unit: 'min', d: 0, show: (s) => s.tuning_mode !== 'manual' },
+    { key: 'theta_design', type: 'range', label: 'Sensor delay assumed in tuning', min: 0, max: 40, step: 0.5, unit: 'min', d: 1, show: (s) => s.tuning_mode !== 'manual' },
+    { key: 'include_zoh', type: 'check', label: 'Add Ts/2 (ZOH) to θ', show: (s) => s.tuning_mode !== 'manual' },
     { key: 'mode', type: 'seg', label: 'Mode', opts: [['P', 'P'], ['PI', 'PI'], ['PID', 'PID']] },
+    ...MANUAL_ITEMS(null),
     { key: 'N', type: 'range', label: 'Derivative filter N', min: 2, max: 20, step: 1, unit: '', d: 0, show: (s) => s.mode === 'PID' },
     { key: 'sensor_delay', type: 'range', label: 'Actual sensor delay in the loop θs', min: 0, max: 40, step: 0.5, unit: 'min', d: 1 },
   ] },
@@ -218,8 +239,13 @@ function valText(item, v) {
 }
 function buildControls(container, spec, prefix) {
   for (const g of spec) {
-    const fs = document.createElement(g.legend ? 'fieldset' : 'div');
-    if (g.legend) fs.innerHTML = `<legend>${g.legend}</legend>`;
+    const fs = document.createElement(g.legend ? 'details' : 'div');
+    if (g.legend) {
+      fs.className = 'grp';
+      const narrow = window.matchMedia('(max-width: 900px)').matches;
+      fs.open = !narrow || !!g.openMobile || spec.length === 1;
+      fs.innerHTML = `<summary>${g.legend}</summary>`;
+    }
     for (const it of g.items) {
       const id = `${prefix}-${it.key}`;
       const wrap = document.createElement('div');
@@ -255,7 +281,14 @@ function buildControls(container, spec, prefix) {
       } else if (it.type === 'seg') {
         wrap.innerHTML = `<label><span>${it.label}</span></label><div class="seg" role="group" aria-label="${it.label}">${it.opts.map(([v, l]) => `<button type="button" data-v="${v}">${l}</button>`).join('')}</div>`;
         input = wrap.querySelector('.seg');
-        input.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => setState({ [it.key]: b.dataset.v }, true)));
+        input.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+          const patch = { [it.key]: b.dataset.v };
+          if (it.key === 'tuning_mode' && b.dataset.v === 'manual' && state.tuning_mode !== 'manual') {
+            const tu = tuningOf(state); // start from the current IMC gains, so nothing jumps
+            Object.assign(patch, { Kc_man: tu.Kc, tauI_man: tu.tauI, tauD_man: tu.tauD });
+          }
+          setState(patch, true);
+        }));
       }
       fs.appendChild(wrap);
       controlEls.push({ it, wrap, input, out });
@@ -266,7 +299,7 @@ function buildControls(container, spec, prefix) {
 function syncControls() {
   for (const { it, wrap, input, out } of controlEls) {
     const v = state[it.key];
-    if (it.type === 'range') { if (+input.value !== v) input.value = v; out.textContent = valText(it, v); }
+    if (it.type === 'range') { if (fin(v) && +input.value !== v) input.value = v; out.textContent = valText(it, v); }
     else if (it.type === 'number') { if (+input.value !== v) input.value = v; }
     else if (it.type === 'select') input.value = v;
     else if (it.type === 'check') input.checked = !!v;
@@ -415,7 +448,9 @@ function renderSimulator() {
 function presetLabel() {
   const p = PRESETS.find((x) => x.id === state.preset);
   const base = p ? p.label : 'Custom';
-  return state.controller === 'pid' ? `${base} · ${state.mode}, τc=${state.tau_c}, θs=${state.sensor_delay}` : `${base} · open loop`;
+  if (state.controller !== 'pid') return `${base} · open loop`;
+  const tun = state.tuning_mode === 'manual' ? `manual Kc=${fmt(state.Kc_man, 3)}` : `τc=${state.tau_c}`;
+  return `${base} · ${state.mode}, ${tun}, θs=${state.sensor_delay}`;
 }
 function renderSaved() {
   const c = C();
@@ -433,25 +468,43 @@ function renderSweeps() {
   if (activeTab !== 'simulator') { dirty.simulator = true; return; }
   const c = C();
   const base = inputsOf(state);
-  // P10: τc sweep
-  const taus = [2, 4, 6, 8, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100];
+  // P10: IMC mode sweeps τc; manual mode sweeps Kc around the current value
+  const manual = state.tuning_mode === 'manual' && fin(state.Kc_man);
   const pk = [], nd = [];
-  for (const tc of taus) {
-    const tu = M.imcTuning({ model: state.model, tau_c: tc, theta_sensor: state.theta_design, Ts: 5, include_zoh: state.include_zoh });
-    const mm = M.metrics(M.simulate({ ...base, Kc: tu.Kc, tauI: tu.tauI, tauD: tu.tauD }));
-    pk.push(mm.peak); nd.push(mm.nadir);
+  let xs, xr, curX, curName;
+  if (manual) {
+    const factors = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3];
+    xs = factors.map((f) => f * state.Kc_man);
+    for (const k of xs) {
+      const mm = M.metrics(M.simulate({ ...base, Kc: k }));
+      pk.push(mm.peak); nd.push(mm.nadir);
+    }
+    xr = { title: { text: 'Kc (mU/min per mg/dL)' } };
+    curX = state.Kc_man; curName = 'Current Kc';
+  } else {
+    xs = [2, 4, 6, 8, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100];
+    for (const tc of xs) {
+      const tu = M.imcTuning({ model: state.model, tau_c: tc, theta_sensor: state.theta_design, Ts: 5, include_zoh: state.include_zoh });
+      const mm = M.metrics(M.simulate({ ...base, Kc: tu.Kc, tauI: tu.tauI, tauD: tu.tauD }));
+      pk.push(mm.peak); nd.push(mm.nadir);
+    }
+    xr = { title: { text: 'τc (min)' }, type: 'log', tickvals: [2, 5, 10, 20, 50, 100] };
+    curX = state.tau_c; curName = 'Current τc';
   }
   const cur = M.metrics(lastResult || M.simulate(base));
-  const xr = { title: { text: 'τc (min)' }, type: 'log', tickvals: [2, 5, 10, 20, 50, 100] };
   const bandLines = (x0, x1, xref = 'paper') => [P.band_low, P.band_high].map((y) => ({ type: 'line', xref, yref: 'y', x0, x1, y0: y, y1: y, line: { color: c.muted, width: 1, dash: 'dot' } }));
   plot('p10', [
-    { x: taus, y: pk, name: 'Peak', mode: 'lines+markers', line: { color: c.s2, width: 2 }, marker: { size: 8 } },
-    { x: taus, y: nd, name: 'Nadir', mode: 'lines+markers', line: { color: c.s1, width: 2 }, marker: { size: 8 } },
-    { x: [state.tau_c, state.tau_c], y: [cur.peak, cur.nadir], name: 'Current τc', mode: 'markers', marker: { symbol: 'diamond', size: 13, color: c.text, line: { color: c.surface, width: 2 } } },
+    { x: xs, y: pk, name: 'Peak', mode: 'lines+markers', line: { color: c.s2, width: 2 }, marker: { size: 8 } },
+    { x: xs, y: nd, name: 'Nadir', mode: 'lines+markers', line: { color: c.s1, width: 2 }, marker: { size: 8 } },
+    { x: [curX, curX], y: [cur.peak, cur.nadir], name: curName, mode: 'markers', marker: { symbol: 'diamond', size: 13, color: c.text, line: { color: c.surface, width: 2 } } },
   ], baseLayout({ hovermode: 'closest', shapes: bandLines(0, 1), xaxis: xr, yaxis: { title: { text: 'glucose (mg/dL)' } } }));
-  document.querySelector('#p10').closest('.panel').querySelector('.chart-cap').innerHTML = state.controller === 'pid'
-    ? 'Each point is a full simulation with the current settings and IMC tuning at that τ<sub>c</sub>. Diamond = current τ<sub>c</sub>. Dotted: 54 and 144 mg/dL.'
-    : 'Open loop is selected, so τ<sub>c</sub> has no effect (flat lines). Switch to closed loop to see the trade-off.';
+  const p10panel = document.querySelector('#p10').closest('.panel');
+  p10panel.querySelector('.chart-title').innerHTML = manual ? 'P10 · Peak and nadir vs K<sub>c</sub> (live sweep, manual gains)' : 'P10 · Peak and nadir vs τ<sub>c</sub> (live sweep)';
+  p10panel.querySelector('.chart-cap').innerHTML = state.controller !== 'pid'
+    ? 'Open loop is selected, so the controller has no effect (flat lines). Switch to closed loop to see the trade-off.'
+    : manual
+      ? 'Manual gains: each point is a full simulation with K<sub>c</sub> scaled from 0.25× to 3× your value (τ<sub>I</sub>, τ<sub>D</sub> fixed). Diamond = current K<sub>c</sub>. Dotted: 54 and 144 mg/dL.'
+      : 'Each point is a full simulation with the current settings and IMC tuning at that τ<sub>c</sub>. Diamond = current τ<sub>c</sub>. Dotted: 54 and 144 mg/dL.';
 
   // P11: pre-bolus sweep
   const pres = [-30, -15, 0, 5, 10, 15, 20, 30, 45, 60];
@@ -672,7 +725,7 @@ function buildDesign() {
   document.getElementById('design-ctl').append(document.querySelector('#design-ctl .row'), document.querySelector('#design-ctl .chart-cap'));
   document.getElementById('tauc-guideline').addEventListener('click', () => {
     const th = tuningOf(state).theta_total;
-    setState({ tau_c: Math.min(100, Math.max(2, Math.round(th))) }, true);
+    setState({ tau_c: Math.min(100, Math.max(2, Math.round(th))), tuning_mode: 'imc' }, true);
   });
   document.getElementById('mpc-case').addEventListener('change', (e) => setState({ mpc_case: e.target.value }));
   document.getElementById('mpc-note').textContent = DATA.mpcComparison.note;
@@ -741,6 +794,7 @@ function renderDesign() {
         : [`K_c=\\frac{\\tau+\\theta/2}{K(\\tau_c+\\theta/2)}=${tf(tu.Kc, 4)}`, `\\tau_I=\\tau+\\tfrac{\\theta}{2}=${tf(tu.tauI, 2)},\\quad \\tau_D=\\frac{\\tau\\theta}{2\\tau+\\theta}=${tf(tu.tauD, 2)}`],
     units: 'K_c in (mU/min)/(mg/dL); τ_I, τ_D, τ_c in min.',
     meaning: `K_c is negative because insulin lowers glucose (reverse-acting process). Larger τ_c → smaller |K_c| → slower, safer loop. Mode ${state.mode}${state.mode !== 'PID' ? ' drops ' + (state.mode === 'P' ? 'the integral and derivative' : 'the derivative') : ''}. Row numbers in Table 12.1 [TO VERIFY].`,
+    extra: state.tuning_mode === 'manual' && fin(state.Kc_man) ? `<div class="callout"><h4>Manual mode: IMC values above are for reference</h4>${T(`\\text{loop uses } K_c=${tf(state.Kc_man, 3)},\\;\\tau_I=${tf(state.tauI_man, 1)},\\;\\tau_D=${tf(state.tauD_man, 1)};\\quad \\frac{K_c}{K_{c,IMC}}=${tf(state.Kc_man / tu.Kc, 2)}`)}<p class="units"><b>Units:</b> K_c in (mU/min)/(mg/dL); τ in min; the ratio is dimensionless.</p><p class="meaning"><b>Meaning:</b> ${state.Kc_man > 0 ? 'K<sub>c</sub> > 0 has the wrong sign for this reverse-acting process: the loop adds insulin when glucose is low.' : state.Kc_man / tu.Kc > 1 ? 'Your loop is more aggressive than the IMC design (larger |K<sub>c</sub>|): faster, but closer to oscillation.' : 'Your loop is gentler than the IMC design (smaller |K<sub>c</sub>|): slower, but more robust to the sensor delay.'}</p></div>` : '',
   }));
   set('ds-pid', card({
     title: 'Discrete PID used in the simulator (every Ts = 5 min)',
@@ -861,6 +915,8 @@ function showTab(tab, focus = false) {
   });
   document.querySelectorAll('[role="tabpanel"]').forEach((p) => { p.hidden = p.id !== `panel-${tab}`; });
   if (location.hash !== `#${tab}`) history.replaceState(null, '', `#${tab}`);
+  const jb = document.getElementById('jump-btn');
+  if (jb) jb.hidden = tab !== 'simulator';
   renderTab(tab);
   if (HAS_PLOTLY) document.querySelectorAll(`#panel-${tab} .js-plotly-plot`).forEach((el) => window.Plotly.Plots.resize(el));
 }
@@ -881,6 +937,19 @@ function init() {
     renderSaved();
   });
   document.getElementById('clear-runs').addEventListener('click', () => { savedRuns = []; renderSaved(); });
+
+  // phones: one floating button that jumps to the controls, or back to the charts while the controls are in view
+  const jump = document.getElementById('jump-btn');
+  const ctlPanel = document.getElementById('sim-controls');
+  let ctlInView = false;
+  const setJump = () => { jump.textContent = ctlInView ? '↑ Charts' : '⚙ Controls'; };
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver((entries) => { ctlInView = entries.some((en) => en.isIntersecting); setJump(); }, { threshold: 0.05 }).observe(ctlPanel);
+  }
+  jump.addEventListener('click', () => {
+    const target = ctlInView ? document.getElementById('sim-top') : ctlPanel;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 
   const tabs = [...document.querySelectorAll('[role="tab"]')];
   tabs.forEach((b, i) => {

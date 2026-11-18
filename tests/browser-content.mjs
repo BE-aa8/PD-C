@@ -1,0 +1,130 @@
+// Content test for Claude's site (site/): checks that charts and numbers show the RIGHT data, not just that they render.
+// The smoke test (tests/browser-smoke.mjs) only checks that each chart has an SVG; a chart fed the wrong data passes it
+// (the build comparison found exactly that in another build). Added after the comparison (docs/plan-simulator-round1-claude.md).
+//
+// Usage:
+//   python3 -m http.server 8000 -d site &
+//   node tests/browser-content.mjs --base http://localhost:8000          # also: --scheme dark
+// Exit code 1 if any check fails.
+import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+const { chromium } = createRequire(import.meta.url)('playwright');
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const E = JSON.parse(readFileSync(join(ROOT, 'tests/expected.json'), 'utf8'));
+const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, arr) => {
+  if (a.startsWith('--')) acc.push([a.slice(2), arr[i + 1]]);
+  return acc;
+}, []));
+const BASE = (args.base || 'http://localhost:8000').replace(/\/$/, '');
+const SCHEME = args.scheme === 'dark' ? 'dark' : 'light';
+const results = [];
+const check = (name, ok, detail = '') => { results.push({ name, ok: !!ok, detail }); };
+const num = (txt) => parseFloat(String(txt).replace('−', '-').replace(/[^0-9.+-eE]/g, ''));
+
+async function setup(page) {
+  if (globalThis.__routeCdn) await globalThis.__routeCdn(page); // hook for sandboxes without CDN access
+}
+
+const browser = await chromium.launch();
+const page = await browser.newPage({ colorScheme: SCHEME, viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 });
+const errors = [];
+page.on('pageerror', (e) => errors.push(String(e)));
+await setup(page);
+await page.goto(`${BASE}/#simulator`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(1200);
+const kpi = async (i) => num(await page.locator('#sim-kpis .kpi .v').nth(i).innerText());
+
+// 1. P1 shows simulate() for the default inputs; KPIs show metrics()
+const p1 = await page.evaluate(async () => {
+  const M = await import(new URL('js/model.js', location.href));
+  const r = M.simulate({});
+  const m = M.metrics(r);
+  const tr = document.getElementById('p1').data[0];
+  let maxErr = 0;
+  tr.y.forEach((y, k) => { maxErr = Math.max(maxErr, Math.abs(y - r.G[Math.min(5 * k, r.G.length - 1)])); });
+  return { maxErr, n: tr.y.length, peak: m.peak, nadir: m.nadir };
+});
+check('P1 true glucose = simulate(DEFAULT_INPUTS)', p1.maxErr < 1e-9 && p1.n > 100, `max diff ${p1.maxErr}, ${p1.n} points`);
+check('KPI peak = metrics().peak', Math.abs((await kpi(0)) - p1.peak) <= 0.051, `${await kpi(0)} vs ${p1.peak}`);
+check('KPI nadir = metrics().nadir', Math.abs((await kpi(1)) - p1.nadir) <= 0.051, `${await kpi(1)} vs ${p1.nadir}`);
+
+// 2. A preset reproduces the independent Python reference (tests/expected.json)
+await page.selectOption('#sim-preset', 'pre15');
+await page.waitForTimeout(700);
+const ref = E.scenarios.find((s) => s.name === 'prebolus_15').metrics;
+check('Preset "15-min pre-bolus": peak = reference', Math.abs((await kpi(0)) - ref.peak) <= 0.06, `${await kpi(0)} vs ${ref.peak}`);
+check('Preset "15-min pre-bolus": nadir = reference', Math.abs((await kpi(1)) - ref.nadir) <= 0.06, `${await kpi(1)} vs ${ref.nadir}`);
+await page.selectOption('#sim-preset', 'default');
+await page.waitForTimeout(900);
+
+// 3. P10 marks the current operating point; manual mode with the copied gains changes nothing; Kc then matters
+const p10x = async () => page.evaluate(() => document.getElementById('p10').data[2].x[0]);
+check('P10 marker at the current τc (20 min)', (await p10x()) === 20, `x = ${await p10x()}`);
+const peakImc = await kpi(0);
+await page.locator('#sim-controls .seg button[data-v="manual"]').click();
+await page.waitForTimeout(900);
+check('Manual mode starts from the IMC gains (same peak)', (await kpi(0)) === peakImc, `${await kpi(0)} vs ${peakImc}`);
+check('P10 marker at the current Kc in manual mode', Math.abs((await p10x()) - E.defaultInputs.Kc) < 1e-3, `x = ${await p10x()}`);
+await page.locator('#sim-Kc_man').evaluate((el) => { el.value = '-1'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+await page.waitForTimeout(700);
+check('Changing manual Kc changes the result', (await kpi(0)) !== peakImc, `${await kpi(0)} vs ${peakImc}`);
+await page.locator('#sim-controls .seg button[data-v="imc"]').click();
+await page.waitForTimeout(500);
+
+// 4. Theory: P4 = nonlinearGain()
+await page.click('[data-tab="theory"]');
+await page.waitForTimeout(900);
+const p4 = await page.evaluate(async () => {
+  const M = await import(new URL('js/model.js', location.href));
+  const tr = document.getElementById('p4').data[0];
+  return Math.max(...tr.x.map((x, i) => Math.abs(tr.y[i] - M.nonlinearGain(x))));
+});
+check('P4 curve = nonlinearGain(ΔU)', p4 < 1e-12, `max diff ${p4}`);
+
+// 5. Control Design: margins text matches the reference; P9 shows DATA.mpcComparison for both cases
+await page.click('[data-tab="design"]');
+await page.waitForTimeout(1000);
+const mtxt = await page.locator('#ds-margins').innerText();
+const m10 = E.margins.find((m) => m.name === 'design10_loop10').expect;
+const m0 = E.margins.find((m) => m.name === 'design10_loop0').expect;
+for (const [label, v] of [['PM with delay', m10.PM_deg.toFixed(1)], ['PM delay-free', m0.PM_deg.toFixed(1)], ['GM', m10.GM.toFixed(2)]]) {
+  check(`Margins card shows ${label} = ${v}`, mtxt.includes(v), '');
+}
+for (const cs of ['unannounced', 'announced']) {
+  await page.selectOption('#mpc-case', cs);
+  await page.waitForTimeout(500);
+  const p9 = await page.evaluate(async (cs) => {
+    const { DATA } = await import(new URL('js/data.js', location.href));
+    const d = document.getElementById('p9').data;
+    const mc = DATA.mpcComparison[cs];
+    const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+    return [same(d[0].y, mc.pid.G_true), same(d[1].y, mc.mpc.G_true), same(d[2].y, mc.pid.U), same(d[3].y, mc.mpc.U)];
+  }, cs);
+  check(`P9 (${cs}) = DATA.mpcComparison`, p9.every(Boolean), JSON.stringify(p9));
+}
+check('No page errors (desktop)', errors.length === 0, errors.join(' | '));
+await page.close();
+
+// 6. Phones: the floating button reaches the controls; no horizontal scroll
+const m = await browser.newPage({ colorScheme: SCHEME, viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+await setup(m);
+await m.goto(`${BASE}/#simulator`, { waitUntil: 'networkidle' });
+await m.waitForTimeout(1200);
+check('Phone: floating Controls button visible', await m.locator('#jump-btn').isVisible(), '');
+await m.locator('#jump-btn').click();
+await m.waitForTimeout(1200);
+const top = await m.evaluate(() => document.getElementById('sim-controls').getBoundingClientRect().top);
+check('Phone: button scrolls to the controls', top < 400 && top > -50, `controls top at ${Math.round(top)} px`);
+const sw = await m.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+check('Phone: no horizontal scroll', sw[0] <= sw[1] + 1, `${sw[0]} > ${sw[1]}`);
+await m.close();
+await browser.close();
+
+const failed = results.filter((r) => !r.ok);
+console.log(`# Content test (${SCHEME}) — ${BASE}/`);
+for (const r of results) console.log(`${r.ok ? '✅' : '❌'} ${r.name}${r.detail && !r.ok ? ` — ${r.detail}` : ''}`);
+console.log(`${results.length - failed.length}/${results.length} passed`);
+process.exit(failed.length ? 1 : 0);

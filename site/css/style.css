@@ -118,8 +118,26 @@ main { padding: 18px 0 30px; }
 
 .controls { position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow-y: auto; }
 @media (max-width: 900px) { .controls { position: static; max-height: none; } }
-.controls fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px 4px; margin: 0 0 10px; min-width: 0; }
-.controls legend { font-weight: 600; font-size: .9rem; padding: 0 4px; }
+.controls details.grp { border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; margin: 0 0 10px; min-width: 0; }
+.controls details.grp[open] { padding-bottom: 4px; }
+.controls details.grp > summary {
+  font-weight: 600; font-size: .9rem; padding: 8px 0; cursor: pointer; list-style: none; display: flex;
+  justify-content: space-between; align-items: center;
+}
+.controls details.grp > summary::-webkit-details-marker { display: none; }
+.controls details.grp > summary::after { content: "▾"; color: var(--text-2); transition: transform .15s; }
+.controls details.grp:not([open]) > summary::after { transform: rotate(-90deg); }
+.controls details.grp > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* phones: floating button that jumps between the charts and the controls */
+.jump-btn {
+  display: none; position: fixed; right: 16px; bottom: 16px; z-index: 40;
+  font: inherit; font-size: .95rem; font-weight: 600; padding: 10px 16px; border-radius: 999px;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .25); cursor: pointer;
+}
+@media (max-width: 900px) { .jump-btn { display: inline-flex; } }
+.jump-btn[hidden] { display: none !important; }
 .ctl { margin: 0 0 8px; }
 .ctl label { display: flex; justify-content: space-between; gap: 8px; font-size: .88rem; color: var(--text-2); }
 .ctl label output, .ctl label .v { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }

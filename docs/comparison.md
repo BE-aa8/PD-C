@@ -120,6 +120,15 @@ enough for live sliders.
   library versions from local npm copies. Both sites still load them from the CDN; the live Netlify test will confirm.
 - **Gemini's files were not changed** for this comparison. They were read from a scratch checkout of `gemini/pro`.
 
+## 5b. Post-comparison changes
+This comparison describes Claude's build at `ce6a77f` and Gemini's at `871f361` (the `comparison-data.json` numbers are from
+those versions). After it, Andrew chose to continue with **Claude's build only**; Gemini's stays frozen at `/gemini/`.
+Later changes to Claude's site (listed so the comparison stays honest):
+- Round 1 (`docs/plan-simulator-round1-claude.md`): phone access to the controls, a manual tuning mode, input warnings in
+  the engine (invalid set-point step, Kc > 0, unknown option names; this changes three rows of the robustness table in
+  Claude's favour), β shown only when a set-point step exists, and a chart-content test (`tests/browser-content.mjs`).
+  The default gains are still computed from `data.js`, not copied from the test file.
+
 ## 6. Process lessons
 - **"Renders" is not "correct":** the smoke test checks that each chart has an SVG, so a chart with no data passes.
   A content check (for example, P9's first glucose value equals `DATA.mpcComparison.unannounced.pid.G_true[0]`) would

@@ -245,3 +245,26 @@ Written by Claude Code at the end of the session, from the session itself. Promp
 **Result:** Andrew enabled Pages ("done"); `main` moved to `33626bc`. CI run 44386879442: reference, npm test, browser, **deploy** and **live** jobs all green. Live site **https://be-aa8.github.io/PD-C/** (Claude) and **https://be-aa8.github.io/PD-C/gemini/** (Gemini): all 10 deployed files match the repo byte for byte; smoke test with the real CDNs 0 failures on both builds in light and dark (7 tabs; 10 and 9 sliders). Screenshots: the run's `live-results` artifact (30 days).
 
 **Next step:** Andrew reviews the live site and writes "My conclusions" in `docs/comparison.md`; the AI Workflow, Video and References tabs come next (`docs/plan-deliverables-claude.md`).
+
+### Part 13: Claude's build only; simulator improvements, round 1
+
+**Prompts (verbatim):**
+27. "I like Claude version better, lets move forward with only its version currently."
+28. Answers to Claude's questions: Gemini's site → "Keep frozen at /gemini/ (Recommended)"; next focus → "Improve the simulator first"; improvements → all four offered ("Phone controls reachable", "Manual tuning mode", "Input-warning fixes", "Chart-content tests"). Then approved the plan (`docs/plan-simulator-round1-claude.md`).
+
+**What the AI produced:**
+- **Phones:** a floating "⚙ Controls / ↑ Charts" button on the Simulator tab (≤ 900 px), and collapsible control groups (only Preset and Controller open on phones).
+- **Manual tuning mode:** a "Tuning: IMC (from τc) | Manual gains" toggle on the Simulator and Control Design tabs. Manual starts from the current IMC gains (nothing jumps); Kc, τI, τD sliders; P10 becomes peak/nadir vs Kc; the IMC step card shows the manual gains and Kc/Kc,IMC. Example: Kc = −1.2 (≈ 2.8× IMC) gives a sustained oscillation, a good demo of the delay limit.
+- **Engine (`site/js/model.js`):** warnings for an invalid set-point step (was dropped silently), Kc > 0, and unknown controller/mode/anti-windup/fault names. `npm test` 65/65.
+- **β slider** now appears only when a set-point step is on: Claude's own check found it changed nothing otherwise (it had passed the smoke test only because its value label changed).
+- **`tests/browser-content.mjs`** (new): 19 checks that charts and numbers show the right data (P1 = `simulate()`, KPIs = `metrics()`, a preset = the Python reference, P4 = `nonlinearGain()`, P9 = `DATA.mpcComparison`, the margins text = the reference, P10 markers, manual mode, phone button, no horizontal scroll). Proven to catch a planted P9 data swap (17/19). Added to CI on the local server and on the live site, light and dark.
+- `docs/comparison.md`: "Post-comparison changes" note.
+
+**What I accepted / changed / rejected, and why:**
+- One part of option 3 was dropped by Claude before building, and stated in the plan: copying the reference's full-precision default gains from `tests/expected.json` would break plan v2 §13 (only `DATA` may be hard-coded; computed values must be computed). The computed gains differ by 6.5 × 10⁻⁷ relative.
+
+**Problems hit:** none beyond the β finding above.
+
+**Results (local, CDN served from local copies):** smoke test 0 failures on `/` (9 sliders) and `/gemini/` (9), light and dark; content test 19/19 light and dark; extended check (40 Simulator sliders with options on, 11 in manual mode, 5 manual on Control Design, 8 on Theory/Design, every preset) found no NaN, console errors or dead sliders.
+
+**Next step:** push to `main` → CI deploys → live tests (now including the content test).

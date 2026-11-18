@@ -241,13 +241,29 @@ function sanitize(inp, warnings) {
     return ok;
   });
   if (!Array.isArray(x.setpoint_steps)) x.setpoint_steps = [];
-  x.setpoint_steps = x.setpoint_steps.filter((s) => Array.isArray(s) && finite(s[0]) && pos(s[1]))
-    .slice().sort((a, b) => a[0] - b[0]);
+  x.setpoint_steps = x.setpoint_steps.filter((s) => {
+    const ok = Array.isArray(s) && finite(s[0]) && pos(s[1]);
+    if (!ok) warnings.push(`Ignored invalid set-point step ${JSON.stringify(s)} (needs a finite time and a set point > 0 mg/dL).`);
+    return ok;
+  }).slice().sort((a, b) => a[0] - b[0]);
   if (x.sensitivity_change !== null && x.sensitivity_change !== undefined) {
     const s = x.sensitivity_change;
     if (!(Array.isArray(s) && finite(s[0]) && pos(s[1]))) {
       warnings.push('Ignored invalid sensitivity change.'); x.sensitivity_change = null;
     }
+  }
+  const choice = (k, allowed) => {
+    if (!allowed.includes(x[k])) {
+      warnings.push(`Unknown ${k} "${String(x[k])}"; using "${DEFAULT_INPUTS[k]}" (allowed: ${allowed.join(', ')}).`);
+      x[k] = DEFAULT_INPUTS[k];
+    }
+  };
+  choice('controller', ['pid', 'none']);
+  choice('mode', ['P', 'PI', 'PID']);
+  choice('anti_windup', ['clamp', 'backcalc', 'off']);
+  choice('fault', ['none', 'stuck', 'drift', 'dropout']);
+  if (x.controller === 'pid' && x.Kc > 0) {
+    warnings.push('Kc > 0 is positive feedback for this reverse-acting process (more insulin lowers glucose, so Kc must be negative).');
   }
   return x;
 }
