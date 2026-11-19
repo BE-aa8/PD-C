@@ -1108,6 +1108,8 @@ function organInfo(key) {
 }
 function initOrganUI() {
   organInfo(null);
+  setRail(false);
+  document.getElementById('organ-explore').addEventListener('click', startOrgan);
   document.getElementById('ov-explore').addEventListener('click', () => document.getElementById('organ').scrollIntoView({ behavior: 'smooth', block: 'start' }));
   const rail = document.querySelector('#organ-viewer .viewer-rail');
   rail.addEventListener('click', (e) => {
@@ -1124,60 +1126,112 @@ function initOrganUI() {
     }
   });
 }
-async function initViewers() {
-  if (OV.started) return;
-  OV.started = true;
-  let mod;
-  try { mod = await import('./pancreas.js'); } catch (e) { console.warn('3D viewer unavailable', e); return; }
-  try {
-    OV.hero = await mod.createPancreasViewer(document.getElementById('hero-stage'), { mode: 'hero' });
-  } catch (e) { console.warn('hero viewer failed', e); }
-  animateHero();
-  const organStage = document.getElementById('organ-stage');
-  const startOrgan = async () => {
-    if (OV.organ !== undefined) return;
-    OV.organ = null;
-    try {
-      OV.organ = await mod.createPancreasViewer(organStage, {
-        mode: 'full',
-        onSelect: (k) => {
-          organInfo(k);
-          if (k === 'duct') document.querySelector('.tool[data-tool="isolate"]').setAttribute('aria-pressed', 'true');
-        },
-        onLowPower: () => document.querySelector('.tool[data-tool="rotate"]').setAttribute('aria-pressed', 'false'),
-      });
-      // the Rotate button shows what the viewer actually does (off under reduced motion or on a software renderer)
-      if (OV.organ) document.querySelector('.tool[data-tool="rotate"]').setAttribute('aria-pressed', String(OV.organ.rotating));
-    } catch (e) { console.warn('organ viewer failed', e); }
-  };
-  new IntersectionObserver((es, obs) => { if (es.some((x) => x.isIntersecting)) { obs.disconnect(); startOrgan(); } }, { rootMargin: '600px' }).observe(organStage);
+// 3D: the hero is live only with a hardware renderer; the full viewer starts on tap. Only one view renders at a time,
+// and both are freed when the Overview is left (GPU memory). ?3d=force skips the hardware check (tests, "Try anyway").
+const FORCE_3D = new URLSearchParams(location.search).get('3d') === 'force';
+let pancreasMod = null;
+const loadPancreas = () => (pancreasMod ??= import('./pancreas.js'));
+function setRail(enabled) {
+  document.querySelectorAll('#organ-viewer .tool').forEach((b) => { b.disabled = !enabled; });
 }
-// hero playhead: loops over the default run; islet glow follows U(t)
+async function initViewers() {
+  if (OV.active) return;
+  OV.active = true;
+  animateHero();
+  let mod;
+  try { mod = await loadPancreas(); } catch (e) { console.warn('3D viewer unavailable', e); return; }
+  if (!OV.active) return; // left the Overview while loading
+  OV.cap = FORCE_3D ? 'ok' : mod.liveCapability();
+  const hero = document.getElementById('hero-stage');
+  hero.dataset.live = String(OV.cap === 'ok');
+  if (OV.cap === 'none') { hero.dataset.fallback = 'true'; }
+  const note = document.getElementById('organ-note');
+  note.hidden = OV.cap === 'ok';
+  document.getElementById('organ-explore').textContent = OV.cap === 'ok' ? 'Explore in 3D' : (OV.cap === 'none' ? 'Explore in 3D (not available)' : 'Try live 3D anyway');
+  document.getElementById('organ-explore').disabled = OV.cap === 'none';
+  if (OV.cap === 'none') note.textContent = 'Live 3D needs WebGL, which this browser has turned off. The rest of the page works without it.';
+  if (OV.cap !== 'ok' || OV.organ) return; // still image only
+  try {
+    const v = await mod.createPancreasViewer(hero, { mode: 'hero' });
+    if (!OV.active || OV.organ) { v?.dispose(); return; }
+    OV.hero = v;
+  } catch (e) { console.warn('hero viewer failed', e); }
+}
+async function startOrgan() {
+  if (OV.organ || OV.organLoading) return;
+  OV.organLoading = true;
+  const btn = document.getElementById('organ-explore');
+  btn.disabled = true; btn.textContent = 'Loading 3D…';
+  try {
+    const mod = await loadPancreas();
+    if (OV.hero) { OV.hero.dispose(); OV.hero = null; } // one GPU context at a time: the hero falls back to its still
+    OV.organ = await mod.createPancreasViewer(document.getElementById('organ-stage'), {
+      mode: 'full',
+      pixelRatio: OV.cap === 'ok' ? null : 0.75, // "Try anyway" on a software renderer: fewer pixels
+      onSelect: (k) => {
+        organInfo(k);
+        if (k === 'duct') document.querySelector('.tool[data-tool="isolate"]').setAttribute('aria-pressed', 'true');
+      },
+      onLowPower: () => document.querySelector('.tool[data-tool="rotate"]').setAttribute('aria-pressed', 'false'),
+    });
+    if (!OV.active) { OV.organ?.dispose(); OV.organ = null; return; }
+    if (OV.organ) {
+      document.getElementById('organ-start').hidden = true;
+      setRail(true);
+      // the Rotate button shows what the viewer actually does (off under reduced motion or on a software renderer)
+      document.querySelector('.tool[data-tool="rotate"]').setAttribute('aria-pressed', String(OV.organ.rotating));
+    }
+  } catch (e) {
+    console.warn('organ viewer failed', e);
+    btn.textContent = 'Live 3D failed to start';
+  } finally { OV.organLoading = false; }
+}
+function stopViewers() {
+  if (!OV.active) return;
+  OV.active = false;
+  cancelAnimationFrame(OV.heroRaf); OV.heroRaf = 0;
+  if (OV.hero) { OV.hero.dispose(); OV.hero = null; }
+  if (OV.organ) { OV.organ.dispose(); OV.organ = null; }
+  document.getElementById('organ-start').hidden = false;
+  const btn = document.getElementById('organ-explore');
+  btn.disabled = false; btn.textContent = OV.cap && OV.cap !== 'ok' ? 'Try live 3D anyway' : 'Explore in 3D';
+  setRail(false);
+  document.querySelectorAll('#organ-viewer .tool[aria-pressed]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+  organInfo(null);
+}
+// hero playhead: loops over the default run; islet glow follows U(t). The readout text changes about 5 times a second.
 function animateHero() {
   const { base } = ovData();
   const N = base.t.length;
   const uMax = Math.max(...base.U);
   const ph = document.getElementById('hero-ph'), dot = document.getElementById('hero-dot'), out = document.getElementById('hero-readout');
   const S = OV.heroScale;
-  const setAt = (i) => {
+  let lastText = 0;
+  const setAt = (i, now = 0) => {
     const t = base.t[i], g = base.G[i], u = base.U[i];
-    ph.setAttribute('x1', S.X(t)); ph.setAttribute('x2', S.X(t));
-    dot.setAttribute('cx', S.X(t)); dot.setAttribute('cy', S.Y(g));
-    out.innerHTML = `t = <b>${fmt(t, 0)}</b> min · G = <b>${fmt(g, 1)}</b> mg/dL · U = <b>${fmt(u, 1)}</b> mU/min`;
+    const x = S.X(t).toFixed(1);
+    ph.setAttribute('x1', x); ph.setAttribute('x2', x);
+    dot.setAttribute('cx', x); dot.setAttribute('cy', S.Y(g).toFixed(1));
+    if (!now || now - lastText > 200) {
+      lastText = now;
+      out.innerHTML = `t = <b>${fmt(t, 0)}</b> min · G = <b>${fmt(g, 1)}</b> mg/dL · U = <b>${fmt(u, 1)}</b> mU/min`;
+    }
     if (OV.hero) OV.hero.setActivity(u / uMax);
   };
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const iPeak = base.G.indexOf(ovData().mBase.peak);
-  if (reduced) { setAt(iPeak); return; }
+  setAt(iPeak);
+  if (reduced) return;
   const PERIOD = 14000;
   const t0 = performance.now();
+  cancelAnimationFrame(OV.heroRaf);
   const loop = (now) => {
+    if (!OV.active) { OV.heroRaf = 0; return; } // stops when the Overview is left; restarted on return
     OV.heroRaf = requestAnimationFrame(loop);
-    if (activeTab !== 'overview' || document.hidden) return;
+    if (document.hidden) return;
     const f = ((((now - t0) % PERIOD) + PERIOD) % PERIOD) / PERIOD; // rAF time can precede t0 on the first frame
-    setAt(Math.max(0, Math.min(N - 1, Math.floor(f * N))));
+    setAt(Math.max(0, Math.min(N - 1, Math.floor(f * N))), now);
   };
-  setAt(iPeak);
   OV.heroRaf = requestAnimationFrame(loop);
 }
 function initReveal() {
@@ -1221,7 +1275,8 @@ function showTab(tab, focus = false, user = false) {
   const jb = document.getElementById('jump-btn');
   if (jb) jb.hidden = tab !== 'simulator';
   renderTab(tab);
-  if (tab === 'overview') initViewers();
+  document.body.dataset.tab = tab;
+  if (tab === 'overview') initViewers(); else stopViewers();
   if (HAS_PLOTLY) document.querySelectorAll(`#panel-${tab} .js-plotly-plot`).forEach((el) => window.Plotly.Plots.resize(el));
 }
 

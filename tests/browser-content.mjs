@@ -220,39 +220,72 @@ check('Chapter 3 numbers = reference (pre-bolus peak, nadir, % in band)', near(f
 const stab = await metricVals('ch-stab-metrics');
 const sampledRef = await ov.evaluate(async () => (await import(new URL('js/data.js', location.href))).DATA.empiricalDelay.design_theta_s_10.value);
 check('Chapter 4 numbers = reference (PM, tolerable delay, sampled limit)', near(stab[0], mg10.PM_deg, 0.06) && near(stab[1], mg10.total_tolerable_delay, 0.06) && near(stab[2], sampledRef, 0.06), `${stab} vs ${mg10.PM_deg}, ${mg10.total_tolerable_delay}, ${sampledRef}`);
-// 3D viewers load the mesh
-await ov.waitForSelector('#hero-stage[data-ready="true"]', { timeout: 30000 }).catch(() => {});
-check('Hero 3D pancreas loads', (await ov.locator('#hero-stage').getAttribute('data-ready')) === 'true', '');
-await ov.locator('#organ').scrollIntoViewIfNeeded();
-await ov.waitForSelector('#organ-stage[data-ready="true"]', { timeout: 30000 }).catch(() => {});
-check('Organ viewer loads', (await ov.locator('#organ-stage').getAttribute('data-ready')) === 'true', '');
+// 3D, default page: live only with a hardware renderer (CI's headless browser has none, like a laptop with
+// hardware acceleration off); otherwise a still image and no WebGL context at all. The glucose trace animates either way.
+const canvases = (pg) => pg.locator('canvas.viewer-canvas').count();
+await ov.waitForFunction(() => document.getElementById('hero-stage').dataset.live !== undefined, null, { timeout: 15000 }).catch(() => {});
+const heroLive = (await ov.locator('#hero-stage').getAttribute('data-live')) === 'true';
+if (heroLive) {
+  await ov.waitForSelector('#hero-stage[data-ready="true"]', { timeout: 30000 }).catch(() => {});
+  check('Hero 3D: live on a hardware renderer', (await ov.locator('#hero-stage').getAttribute('data-ready')) === 'true', '');
+} else {
+  const still = await ov.locator('#hero-stage img.viewer-still').evaluate((im) => im.complete && im.naturalWidth > 0 && getComputedStyle(im).visibility === 'visible');
+  check('Hero 3D: software renderer → still image, no WebGL context', still && (await canvases(ov)) === 0, `still ${still}, canvases ${await canvases(ov)}`);
+  check('Viewer offers "Try live 3D anyway" with the reason', (await ov.locator('#organ-explore').innerText()).includes('anyway') && await ov.locator('#organ-note').isVisible(), '');
+}
+const phX = async () => ov.locator('#hero-ph').getAttribute('x1');
+const x0 = await phX(); await ov.waitForTimeout(700);
+check('Hero glucose playhead animates', x0 !== (await phX()), `${x0} → ${await phX()}`);
+check('Viewer tools disabled until the viewer starts', await ov.locator('.tool[data-tool="wireframe"]').isDisabled(), '');
+await ov.close();
+
+// 6b. Live viewer (?3d=force skips the hardware check, as "Try anyway" does): tap to start, one GPU context at a time,
+// tools, hotspots, and everything released when the Overview is left
+const fv = await browser.newPage({ colorScheme: SCHEME, viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 });
+fv.on('pageerror', (e) => ovErrors.push(String(e)));
+await setup(fv);
+await fv.goto(`${BASE}/${Q ? Q + '&' : '?'}3d=force#overview`, { waitUntil: 'networkidle' });
+await fv.waitForSelector('#hero-stage[data-ready="true"]', { timeout: 30000 }).catch(() => {});
+check('Hero 3D pancreas loads (forced live)', (await fv.locator('#hero-stage').getAttribute('data-ready')) === 'true', '');
+await fv.locator('#organ').scrollIntoViewIfNeeded();
+check('Organ viewer waits for a tap (no canvas yet)', (await fv.locator('#organ-stage canvas').count()) === 0 && await fv.locator('#organ-explore').isVisible(), '');
+await fv.click('#organ-explore');
+await fv.waitForSelector('#organ-stage[data-ready="true"]', { timeout: 30000 }).catch(() => {});
+check('Organ viewer starts on tap', (await fv.locator('#organ-stage').getAttribute('data-ready')) === 'true' && !(await fv.locator('#organ-start').isVisible()), '');
+check('Only one live 3D view (hero released)', (await canvases(fv)) === 1 && (await fv.locator('#hero-stage canvas').count()) === 0, `canvases ${await canvases(fv)}`);
 // each toggle tool flips aria-pressed; reset clears them
 const toggles = ['wireframe', 'section', 'isolate', 'context'];
 const flips = [];
 for (const t of toggles) {
-  const before = await ov.locator(`.tool[data-tool="${t}"]`).getAttribute('aria-pressed');
-  await ov.locator(`.tool[data-tool="${t}"]`).click();
-  flips.push(before === 'false' && (await ov.locator(`.tool[data-tool="${t}"]`).getAttribute('aria-pressed')) === 'true');
+  const before = await fv.locator(`.tool[data-tool="${t}"]`).getAttribute('aria-pressed');
+  await fv.locator(`.tool[data-tool="${t}"]`).click();
+  flips.push(before === 'false' && (await fv.locator(`.tool[data-tool="${t}"]`).getAttribute('aria-pressed')) === 'true');
 }
 check('Viewer tools toggle aria-pressed', flips.every(Boolean), JSON.stringify(Object.fromEntries(toggles.map((t, i) => [t, flips[i]]))));
-await ov.locator('.tool[data-tool="reset"]').click();
-const after = await Promise.all(toggles.map((t) => ov.locator(`.tool[data-tool="${t}"]`).getAttribute('aria-pressed')));
+await fv.locator('.tool[data-tool="reset"]').click();
+const after = await Promise.all(toggles.map((t) => fv.locator(`.tool[data-tool="${t}"]`).getAttribute('aria-pressed')));
 check('Reset clears the viewer tools', after.every((v) => v === 'false'), after.join(','));
 // hotspots open their part in the info panel and the breadcrumb
-await ov.waitForTimeout(500);
-const spots = await ov.locator('#organ-stage .hotspot:not(.behind)').evaluateAll((els) => els.map((e) => e.dataset.key));
+await fv.waitForTimeout(500);
+const spots = await fv.locator('#organ-stage .hotspot:not(.behind)').evaluateAll((els) => els.map((e) => e.dataset.key));
 let spotOk = spots.length >= 3;
 const spotDetail = [];
 for (const k of spots) {
-  await ov.locator(`#organ-stage .hotspot[data-key="${k}"]`).evaluate((el) => el.click());
-  const h = (await ov.locator('#organ-info h4').innerText()).trim();
-  const crumb = (await ov.locator('#organ-crumb').innerText()).trim();
+  await fv.locator(`#organ-stage .hotspot[data-key="${k}"]`).evaluate((el) => el.click());
+  const h = (await fv.locator('#organ-info h4').innerText()).trim();
+  const crumb = (await fv.locator('#organ-crumb').innerText()).trim();
   const ok = h.length > 0 && h !== 'Pancreas' && crumb.endsWith(h);
   spotOk = spotOk && ok; spotDetail.push(`${k}→${h}`);
 }
 check('Hotspots open their label (info panel + breadcrumb)', spotOk, spotDetail.join(', ') || 'no visible hotspots');
+await fv.click('#tab-simulator');
+await fv.waitForTimeout(500);
+check('Leaving the Overview releases every 3D view', (await canvases(fv)) === 0 && (await fv.locator('#organ-stage .hotspot').count()) === 0, `canvases ${await canvases(fv)}`);
+await fv.click('#tab-overview');
+await fv.waitForSelector('#hero-stage[data-ready="true"]', { timeout: 30000 }).catch(() => {});
+check('Returning restarts the hero; the viewer waits for a tap again', (await fv.locator('#hero-stage').getAttribute('data-ready')) === 'true' && await fv.locator('#organ-explore').isEnabled() && (await canvases(fv)) === 1, '');
+await fv.close();
 check('No page errors (Overview)', ovErrors.length === 0, ovErrors.join(' | '));
-await ov.close();
 
 // 7. Without WebGL the viewers show a notice and the rest of the Overview still works
 const nctx = await browser.newContext({ colorScheme: SCHEME, viewport: { width: 1280, height: 900 } });
@@ -266,7 +299,7 @@ ng.on('pageerror', (e) => ngErrors.push(String(e)));
 await setup(ng);
 await ng.goto(`${BASE}/${Q}#overview`, { waitUntil: 'networkidle' });
 await ng.waitForTimeout(1500);
-check('No WebGL: hero shows the fallback notice', (await ng.locator('#hero-stage').getAttribute('data-fallback')) === 'true' && (await ng.locator('#hero-stage .viewer-fallback').count()) === 1, '');
+check('No WebGL: still image and a notice, viewer not offered', (await ng.locator('#hero-stage').getAttribute('data-fallback')) === 'true' && await ng.locator('#organ-explore').isDisabled() && (await ng.locator('#organ-note').innerText()).includes('WebGL'), '');
 check('No WebGL: chapters still render', (await ng.locator('#ch-late-metrics .metric').count()) === 3, '');
 check('No page errors (no WebGL)', ngErrors.length === 0, ngErrors.join(' | '));
 await nctx.close();

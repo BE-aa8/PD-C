@@ -139,6 +139,8 @@ Later changes to Claude's site (listed so the comparison stays honest):
 - Redesign Phase 4 (`docs/plan-redesign-phase4-claude.md`): Simulator as a workspace (preset, status and actions in a
   header; peak and nadir as lead KPIs; P1–P3 stacked on one linked time axis; quieter controls rail; compare, analysis
   and detailed-metrics sections; a help panel). Adds a Reset button and removable saved-run chips. Presentation only.
+- 3D performance fix (`docs/plan-3d-performance-claude.md`): live 3D only with a hardware renderer (otherwise still
+  images), the full viewer starts on tap, one WebGL context at a time, both released when leaving the Overview.
 
 ## 6. Process lessons
 - **"Renders" is not "correct":** the smoke test checks that each chart has an SVG, so a chart with no data passes.

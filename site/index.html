@@ -75,7 +75,9 @@
       </div>
       <figure class="hero-visual">
         <div class="viewer-stage hero-stage" id="hero-stage" role="img"
-          aria-label="Slowly rotating 3D model of the pancreas with schematic islets whose glow follows the simulated insulin rate"></div>
+          aria-label="Slowly rotating 3D model of the pancreas with schematic islets whose glow follows the simulated insulin rate">
+          <img class="viewer-still" src="models/pancreas-hero.webp" alt="" width="1120" height="960" decoding="async" fetchpriority="low">
+        </div>
         <div class="hero-trace">
           <svg id="hero-trace" class="trace-svg" viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true"></svg>
           <p class="trace-readout" id="hero-readout" aria-live="off"></p>
@@ -151,7 +153,7 @@
       <p class="ov-sub">Drag to turn the pancreas. Use the tools to look inside, isolate the duct, or show the duodenum it sits against.</p>
       <div class="viewer" id="organ-viewer">
         <div class="viewer-rail" role="toolbar" aria-label="3D view tools">
-          <button type="button" class="tool" data-tool="rotate" aria-pressed="true" title="Rotate"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 12a8 8 0 1 1-2.3-5.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20.2 4v3.8h-3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Rotate</span></button>
+          <button type="button" class="tool" data-tool="rotate" aria-pressed="false" title="Rotate"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 12a8 8 0 1 1-2.3-5.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20.2 4v3.8h-3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Rotate</span></button>
           <button type="button" class="tool" data-tool="zoom-in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5M11 8v6M8 11h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Zoom in</span></button>
           <button type="button" class="tool" data-tool="zoom-out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5M8 11h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Zoom out</span></button>
           <button type="button" class="tool" data-tool="wireframe" aria-pressed="false" title="Wireframe"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Wireframe</span></button>
@@ -162,6 +164,12 @@
         </div>
         <div class="viewer-stage organ-stage" id="organ-stage" role="img" aria-label="Interactive 3D model of the pancreas from BodyParts3D anatomy data">
           <p class="viewer-crumb" id="organ-crumb">Abdomen <span aria-hidden="true">›</span> Pancreas</p>
+          <img class="viewer-still" src="models/pancreas-viewer.webp" alt="" width="1480" height="920" loading="lazy" decoding="async">
+          <div class="viewer-start" id="organ-start">
+            <button type="button" class="btn primary btn-lg" id="organ-explore">Explore in 3D</button>
+            <p class="viewer-note" id="organ-note" hidden>Live 3D is off: this browser is drawing graphics without the graphics card
+              (hardware acceleration is off or unavailable), which makes 3D very slow. You can still try it at low resolution.</p>
+          </div>
         </div>
         <aside class="viewer-info card" id="organ-info" aria-live="polite"></aside>
       </div>
@@ -349,7 +357,7 @@
         Mitsuhashi N, Fujieda K, Tamura T, Kawamoto S, Takagi T, Okubo K. BodyParts3D: 3D structure database for anatomical
         concepts. <i>Nucleic Acids Res.</i> 2009;37(Database issue):D782&ndash;5. doi:10.1093/nar/gkn613.
         Adapted (merged, re-centred, smoothed; schematic islet points added) by <code>tools/build_pancreas_mesh.mjs</code>; the
-        adapted mesh in <a href="models/LICENSE-BodyParts3D.txt">site/models/</a> is shared under the same licence.</p>
+        adapted mesh and its two still renders in <a href="models/LICENSE-BodyParts3D.txt">site/models/</a> are shared under the same licence.</p>
       <h3>Contributions</h3>
       <p>Individual project. Contributions will be listed here (student: direction, decisions and review; AI models: as documented on the AI Workflow tab).</p>
     </div>

@@ -364,3 +364,33 @@ Written by Claude Code at the end of the session, from the session itself. Promp
 **Results (local, CDN served from local copies):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light` and `/gemini/` with the device in light and dark; content test 45/45 in both themes; extended slider/preset/manual-mode check clean; no horizontal scroll and no console errors at 1280, 1024, 768 and 375 px in both themes; screenshots reviewed.
 
 **Next step:** Andrew reviews the Simulator on the live site; then Phase 5 (Theory and Control Design, including the phone layout for both loop diagrams).
+
+### Part 19: the 3D pancreas made the Overview lag and crash on desktop
+
+**Prompt (verbatim):** 34. "is there anyway we can make the website less laggy, with the 3D models, my website is crashing everytime"
+
+**Andrew's answers to Claude's questions (verbatim):** "It only crashes on the 3D models, the other tabs work fine. Right now it crashes on overview for desktop/laptop. The website remains working for the phone at all time. The top 3D pancreas does not do any animation and is still. the bottom works as designed, but is very slow." Loading choice: "Hero live, viewer on tap (Recommended)". Plan approved: `docs/plan-3d-performance-claude.md`.
+
+**Diagnosis (Claude, from the code and the symptoms):** a still hero on a laptop means the viewer had switched to its low-power mode, which happens when the browser draws WebGL in software (hardware acceleration off or the GPU not used), the same path as the headless test browser. In that state the page made things worse: two WebGL contexts that were never released, up to 2× pixel ratio with antialiasing, blur effects over the moving canvas (the glass glucose card and the sticky header), and per-frame layout work (a size read every frame, label positions rewritten every frame, the readout's HTML rewritten 60 times a second, a hero loop that kept running on every tab).
+
+**What changed:**
+- **Live 3D only with a hardware renderer.** The page asks the browser for a context with `failIfMajorPerformanceCaveat` and checks the renderer name; on a software renderer it shows a pre-rendered still of the pancreas instead, and the glucose trace, playhead and readout keep animating. The viewer explains why ("Live 3D is off: this browser is drawing graphics without the graphics card…") and offers "Try live 3D anyway" at low resolution.
+- **The full viewer starts on tap** ("Explore in 3D"); the hero is then released, so there is never more than one WebGL context. Leaving the Overview releases everything (`forceContextLoss`); returning restarts the hero (the mesh stays cached).
+- **Cheaper frames:** pixel ratio ≤ 1.5 (antialiasing only below that), auto-rotation at 30 fps, no per-frame size read, labels rewritten only when the camera moves, readout text 5×/s, no blur over the canvas.
+- **Stills:** `tools/render_pancreas_stills.mjs` renders `site/models/pancreas-hero.webp` and `pancreas-viewer.webp` (≈ 32 KB each, transparent, both themes), credited under the same CC BY-SA 2.1 JP licence.
+
+**Measured (local headless Chromium, software WebGL like Andrew's laptop; 1440×900 at 2×; load, 6 s on the hero, scroll to the viewer, a 20-step drag, back to top):**
+
+| | Main-thread busy | Long tasks (> 50 ms) | 20-step drag | WebGL contexts |
+|---|---|---|---|---|
+| Before | 3.24 s | 24 (1.81 s total) | 1.34 s | 2 |
+| After, default (no tap) | 1.47 s | 2 (0.19 s total) | 0.69 s | 0 |
+| After, "Try anyway" tapped | 3.15 s | 4 (0.45 s total) | 1.55 s | 1 |
+
+On a software renderer, live 3D stays slow by nature; the difference is that it is now opt-in and never more than one context. These numbers are from the test machine, not Andrew's laptop; he will confirm there.
+
+**Tests (content test, now 53 checks):** the default page shows the still and creates no WebGL context on a software renderer (or is live on a hardware one), with the reason and "Try anyway" shown; the hero playhead animates; the tools are disabled until the viewer starts. A forced-live page (`?3d=force`) checks that the viewer waits for a tap, starts on tap, that only one 3D view is live, the tools, Reset and hotspots, that leaving the Overview releases every view, and that returning restarts the hero. The no-WebGL check now expects the still and a disabled viewer button.
+
+**Results (local):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light`, `/gemini/` (device light and dark); content test 53/53 in both themes; extended check clean; screenshots at 1280 and 375 px reviewed.
+
+**Next step:** Andrew checks the Overview on his laptop. If the still image and "Live 3D is off" appear, hardware acceleration is off in that browser (Chrome: Settings → System → "Use graphics acceleration when available"; `chrome://gpu` shows the details); turning it on brings back the rotating hero.

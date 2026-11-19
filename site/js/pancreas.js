@@ -5,11 +5,38 @@
 const REDUCED = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COARSE = () => window.matchMedia('(pointer: coarse)').matches;
 
+const SOFTWARE = /swiftshader|llvmpipe|softpipe|software|basic render/i;
+const release = (gl) => { try { gl && gl.getExtension('WEBGL_lose_context')?.loseContext(); } catch (e) { /* ignore */ } };
+
 export function webglAvailable() {
   try {
     const c = document.createElement('canvas');
-    return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+    const gl = window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'));
+    release(gl);
+    return !!gl;
   } catch (e) { return false; }
+}
+
+/**
+ * Can this browser draw live 3D with the graphics card? 'ok', 'software' (WebGL exists but runs on the CPU: hardware
+ * acceleration off or the GPU blocklisted; live 3D then makes the page crawl) or 'none' (no WebGL).
+ */
+let capability = null;
+export function liveCapability() {
+  if (capability) return capability;
+  capability = 'none';
+  try {
+    const c = document.createElement('canvas');
+    const opt = { failIfMajorPerformanceCaveat: true };
+    const gl = c.getContext('webgl2', opt) || c.getContext('webgl', opt);
+    if (gl) {
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      const name = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
+      capability = SOFTWARE.test(name) ? 'software' : 'ok';
+      release(gl);
+    } else if (webglAvailable()) capability = 'software';
+  } catch (e) { /* none */ }
+  return capability;
 }
 
 let assetPromise = null;
@@ -35,7 +62,7 @@ function loadThree() {
  * Create a viewer inside `stage` (a positioned element). mode: 'hero' (no tools, gentle) or 'full' (tools + hotspots).
  * Returns a promise of an API: { setActivity(u01), setTool(name, on), zoom(f), reset(), select(key), dispose() }.
  */
-export async function createPancreasViewer(stage, { mode = 'full', base = document.baseURI, onSelect, onLowPower } = {}) {
+export async function createPancreasViewer(stage, { mode = 'full', base = document.baseURI, onSelect, onLowPower, pixelRatio = null } = {}) {
   if (!webglAvailable()) {
     stage.dataset.fallback = 'true';
     stage.insertAdjacentHTML('beforeend', '<p class="viewer-fallback">The 3D view needs WebGL, which this browser has turned off. The rest of the page works without it.</p>');
@@ -43,8 +70,10 @@ export async function createPancreasViewer(stage, { mode = 'full', base = docume
   }
   const [{ THREE, OrbitControls }, [meta, bin]] = await Promise.all([loadThree(), loadAsset(base)]);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  // pixel budget: at most 1.5 device pixels per CSS pixel; antialiasing only below that (a 2x screen at 1.5 is sharp enough)
+  const pr = pixelRatio ?? Math.min(window.devicePixelRatio || 1, 1.5);
+  const renderer = new THREE.WebGLRenderer({ antialias: pr < 1.5, alpha: true, powerPreference: 'low-power' });
+  renderer.setPixelRatio(pr);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -57,7 +86,7 @@ export async function createPancreasViewer(stage, { mode = 'full', base = docume
     const gl = renderer.getContext();
     const ext = gl.getExtension('WEBGL_debug_renderer_info');
     const name = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
-    lowPower = /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
+    lowPower = SOFTWARE.test(name);
   } catch (e) { /* keep the default */ }
   renderer.domElement.setAttribute('aria-hidden', 'true');
   stage.prepend(renderer.domElement);
@@ -172,9 +201,10 @@ export async function createPancreasViewer(stage, { mode = 'full', base = docume
     // keep the whole organ in frame on narrow (portrait) stages: widen the view instead of cropping
     camera.zoom = Math.min(1, camera.aspect / (mode === 'hero' ? 1.15 : 1.3));
     camera.updateProjectionMatrix();
+    kick();
   };
   const ro = new ResizeObserver(resize); ro.observe(stage);
-  let visible = false, raf = 0, frames = 0, slow = 0, lastT = 0;
+  let visible = false, raf = 0, frames = 0, slow = 0, lastT = 0, lastRender = 0, dragging = false, paused = false, hsKey = '';
   const goLowPower = () => {
     if (lowPower) return;
     lowPower = true; controls.autoRotate = false; controls.enableDamping = false;
@@ -185,26 +215,35 @@ export async function createPancreasViewer(stage, { mode = 'full', base = docume
   const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3(), tmp3 = new THREE.Vector3();
   const frame = (now) => {
     raf = 0;
-    if (!visible || document.hidden || !stage.offsetParent) return;
-    resize();
-    const moving = controls.update();
+    if (paused || !visible || document.hidden || !stage.offsetParent || !w) return;
+    // auto-rotation alone runs at 30 fps; dragging gets every frame
+    if (!dragging && controls.autoRotate && lastRender && now - lastRender < 32) { raf = requestAnimationFrame(frame); return; }
+    const dt = lastRender ? Math.min(0.1, (now - lastRender) / 1000) : 1 / 30;
+    lastRender = now;
+    const moving = controls.update(dt);
     // adaptive: if the first frames are slow, switch to on-demand rendering
     if (!lowPower && lastT) { frames++; if (now - lastT > 45) slow++; if (frames === 24 && slow > 12) goLowPower(); }
     lastT = now;
     const a = state.activity;
     isletMat.size = 0.05 + 0.09 * a; isletMat.opacity = 0.25 + 0.75 * a;
     renderer.render(scene, camera);
-    for (const hs of hotspotEls) {
-      tmp.copy(hs.v).project(camera);
-      // on the far side of the organ when the anchor points away from the camera (relative to the organ's centre)
-      const facing = tmp2.copy(hs.v).sub(controls.target).dot(tmp3.copy(camera.position).sub(controls.target)) > -0.05;
-      hs.el.style.transform = `translate(${(tmp.x * 0.5 + 0.5) * w}px, ${(-tmp.y * 0.5 + 0.5) * h}px)${hs.key === 'head' ? ' translateX(calc(-100% + 18px))' : ''}`;
-      // the duct is internal: its label shows only when the duct is exposed (isolate or cross-section)
-      const hidden = !facing || (hs.key === 'duct' && !(state.isolate || state.section));
-      hs.el.classList.toggle('behind', hidden);
+    // labels: rewrite their positions only when the camera, the size or the exposed parts changed
+    const p = camera.position;
+    const key = `${p.x.toFixed(4)},${p.y.toFixed(4)},${p.z.toFixed(4)},${w},${h},${state.isolate},${state.section}`;
+    if (hotspotEls.length && key !== hsKey) {
+      hsKey = key;
+      for (const hs of hotspotEls) {
+        tmp.copy(hs.v).project(camera);
+        // on the far side of the organ when the anchor points away from the camera (relative to the organ's centre)
+        const facing = tmp2.copy(hs.v).sub(controls.target).dot(tmp3.copy(camera.position).sub(controls.target)) > -0.05;
+        hs.el.style.transform = `translate(${((tmp.x * 0.5 + 0.5) * w).toFixed(1)}px, ${((-tmp.y * 0.5 + 0.5) * h).toFixed(1)}px)${hs.key === 'head' ? ' translateX(calc(-100% + 18px))' : ''}`;
+        // the duct is internal: its label shows only when the duct is exposed (isolate or cross-section)
+        const hidden = !facing || (hs.key === 'duct' && !(state.isolate || state.section));
+        if (hidden !== hs.hidden) { hs.hidden = hidden; hs.el.classList.toggle('behind', hidden); }
+      }
     }
     if (!stage.dataset.ready) stage.dataset.ready = 'true';
-    if (lowPower && !moving) { lastT = 0; return; } // on demand: stop until the next change
+    if (lowPower && !moving && !dragging) { lastT = 0; lastRender = 0; return; } // on demand: stop until the next change
     raf = requestAnimationFrame(frame);
   };
   const kick = () => { if (!raf) raf = requestAnimationFrame(frame); };
@@ -212,6 +251,8 @@ export async function createPancreasViewer(stage, { mode = 'full', base = docume
   io.observe(stage);
   document.addEventListener('visibilitychange', kick);
   controls.addEventListener('change', kick);
+  controls.addEventListener('start', () => { dragging = true; kick(); });
+  controls.addEventListener('end', () => { dragging = false; });
 
   const api = {
     setActivity(u01) { state.activity = Math.max(0, Math.min(1, u01)); if (REDUCED() && !lowPower) kick(); },
@@ -239,7 +280,30 @@ export async function createPancreasViewer(stage, { mode = 'full', base = docume
     },
     get rotating() { return controls.autoRotate; },
     get lowPower() { return lowPower; },
-    dispose() { cancelAnimationFrame(raf); io.disconnect(); ro.disconnect(); renderer.dispose(); },
+    /** stop rendering (another view is live); the last frame stays on screen */
+    pause() { paused = true; cancelAnimationFrame(raf); raf = 0; },
+    resume() { paused = false; lastRender = 0; kick(); },
+    /** render one frame at W x H CSS pixels and return it as a data URL (used by tools/render_pancreas_stills.mjs) */
+    snapshot(W, H, type = 'image/png') {
+      renderer.setSize(W, H, false); camera.aspect = W / H; camera.zoom = 1; camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+      const url = renderer.domElement.toDataURL(type);
+      w = 0; h = 0; resize(); // back to the stage size (and its zoom)
+      return url;
+    },
+    /** free the GPU context and everything this viewer added to the page */
+    dispose() {
+      paused = true; cancelAnimationFrame(raf); raf = 0;
+      io.disconnect(); ro.disconnect();
+      document.removeEventListener('visibilitychange', kick);
+      controls.dispose();
+      Object.values(geo).forEach((g) => g.dispose()); ip.dispose();
+      Object.values(mats).forEach((m) => m.dispose()); isletMat.dispose(); sprite.dispose();
+      renderer.dispose(); renderer.forceContextLoss();
+      renderer.domElement.remove();
+      hotspotEls.forEach((hs) => hs.el.remove());
+      delete stage.dataset.ready; delete stage.dataset.lowpower;
+    },
   };
   applyState();
   resize();
