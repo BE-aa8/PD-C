@@ -302,3 +302,21 @@ Written by Claude Code at the end of the session, from the session itself. Promp
 - First CI run of Phase 1 (44421655694): all tests passed, but the screenshot upload failed because the light-theme smoke run saves into a folder named `?theme=light`, and `?` is not allowed in artifact file names; the deploy was therefore skipped. Fixed by renaming the folder before upload (both jobs).
 
 **Next step:** Andrew reviews Phase 1 on the live site; then Phase 2 (header, navigation, page containers, footer).
+
+### Part 16: redesign Phase 2 (global navigation and layout)
+
+**Prompt (verbatim):** 31. "start phase 2" (Claude entered plan mode, as `CLAUDE.md` requires for new work; Andrew approved `docs/plan-redesign-phase2-claude.md`).
+
+**What the AI produced (presentation only; same 7 tab buttons, ids and behaviour):**
+- **Top bar**, sticky on every width, translucent with a blur, a hairline once the page scrolls: a small abstract loop glyph and the "Closing the Loop" wordmark, the seven tabs, and the theme toggle. Below 1100 px the tabs move to a second row that scrolls sideways inside itself. No hamburger menu: a hidden menu would make the smoke test find no visible tabs on phones and silently skip its mobile checks.
+- **Sliding pill** behind the active tab (positioned from the active button; recomputed on resize and after the fonts load; no animation under reduced motion); the active tab is scrolled into view on narrow screens.
+- **Disclaimer strip** under the bar on every page with the full, unchanged sentence (and again in the footer). Switching tabs now scrolls to the top, so the strip is in view whenever a page opens.
+- **Page headers:** an eyebrow ("01 — Overview" … "07 — References"), the page title and the lead, with consistent spacing; a short fade-and-rise when a page opens. A visually hidden `h1` keeps the page outline for screen readers now that the old header title is gone.
+- **Footer:** wordmark, course line, disclaimer; "Explore" buttons for each tab (buttons with `data-goto`, not `<a href="#…">` inside a `<nav>`, which the smoke test would count as tabs); "Project" links (source repo, Gemini's frozen build, model source, libraries and font licences).
+- **Shared controls:** custom range sliders (filled track, round thumb, focus ring), selects with a drawn chevron, card hover, the "coming soon" placeholder panel.
+
+**Problems hit and fixed:** `main` kept zero top padding because `.wrap` (a class) out-ranked `main` (an element) in specificity; the References placeholder mixed centred paragraphs with a left-aligned list; a large gap above the first Theory section. On phones, the jump from the charts to the controls (≈ 14,000 px) took about 2.5 s as a smooth scroll and left the content test's check at its edge (373 px against a 400 px limit); long jumps are now instant, short ones stay smooth.
+
+**Results (local, CDN served from local copies):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light` and `/gemini/`; content test 25/25 in both themes; extended slider/preset/manual-mode check clean in both themes; no horizontal scroll at 1280, 1024, 768 or 375 px; screenshots reviewed (including the scrolled bar, the 1024 px two-row header, the footer, and the phone jump).
+
+**Next step:** Phase 3 (Overview: hero, process diagram, the four teaching points with real model results, AI story, route into the Simulator). The hero visual will be generated from the model's own trajectories; to confirm with Andrew first.

@@ -130,6 +130,8 @@ Later changes to Claude's site (listed so the comparison stays honest):
   The default gains are still computed from `data.js`, not copied from the test file.
 - Redesign Phase 1 (`docs/plan-redesign-phase1-claude.md`, brief by ChatGPT in `docs/redesign-brief-chatgpt.md`): new
   design tokens, self-hosted fonts, dark-by-default theme with a toggle, re-themed charts. Presentation only.
+- Redesign Phase 2 (`docs/plan-redesign-phase2-claude.md`): sticky top bar with sliding tab indicator, disclaimer strip,
+  page headers, footer, custom sliders and selects. Presentation only.
 
 ## 6. Process lessons
 - **"Renders" is not "correct":** the smoke test checks that each chart has an SVG, so a chart with no data passes.

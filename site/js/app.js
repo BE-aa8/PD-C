@@ -304,7 +304,12 @@ function buildControls(container, spec, prefix) {
 function syncControls() {
   for (const { it, wrap, input, out } of controlEls) {
     const v = state[it.key];
-    if (it.type === 'range') { if (fin(v) && +input.value !== v) input.value = v; out.textContent = valText(it, v); }
+    if (it.type === 'range') {
+      if (fin(v) && +input.value !== v) input.value = v;
+      out.textContent = valText(it, v);
+      const lo = +input.min, hi = +input.max;
+      input.style.setProperty('--fill', `${hi > lo ? Math.min(100, Math.max(0, ((+input.value - lo) / (hi - lo)) * 100)) : 0}%`);
+    }
     else if (it.type === 'number') { if (+input.value !== v) input.value = v; }
     else if (it.type === 'select') input.value = v;
     else if (it.type === 'check') input.checked = !!v;
@@ -909,8 +914,21 @@ function renderRefs() {
 }
 
 // ------------------------------------------------------------------ tabs, init
-function showTab(tab, focus = false) {
+// sliding pill behind the active tab (CSS reads --ind-x / --ind-w on the nav)
+function positionIndicator(animate = true) {
+  const nav = document.querySelector('.tabs');
+  const btn = nav && nav.querySelector('[role="tab"][aria-selected="true"]');
+  if (!btn) return;
+  nav.classList.toggle('no-anim', !animate);
+  nav.style.setProperty('--ind-x', `${btn.offsetLeft}px`);
+  nav.style.setProperty('--ind-w', `${btn.offsetWidth}px`);
+  // keep the active tab visible in the scrollable strip (narrow screens), without moving the page
+  const left = btn.offsetLeft - nav.scrollLeft, right = left + btn.offsetWidth;
+  if (left < 0 || right > nav.clientWidth) nav.scrollTo({ left: btn.offsetLeft - (nav.clientWidth - btn.offsetWidth) / 2, behavior: animate ? 'smooth' : 'auto' });
+}
+function showTab(tab, focus = false, user = false) {
   if (!document.getElementById(`panel-${tab}`)) tab = 'overview';
+  const changed = tab !== activeTab;
   activeTab = tab;
   document.querySelectorAll('[role="tab"]').forEach((b) => {
     const on = b.dataset.tab === tab;
@@ -919,6 +937,12 @@ function showTab(tab, focus = false) {
     if (on && focus) b.focus();
   });
   document.querySelectorAll('[role="tabpanel"]').forEach((p) => { p.hidden = p.id !== `panel-${tab}`; });
+  positionIndicator(user);
+  if (user && changed) {
+    window.scrollTo({ top: 0, behavior: 'auto' }); // each page opens at its top, with the disclaimer strip in view
+    const panel = document.getElementById(`panel-${tab}`);
+    panel.classList.remove('enter'); void panel.offsetWidth; panel.classList.add('enter');
+  }
   if (location.hash !== `#${tab}`) history.replaceState(null, '', `#${tab}`);
   const jb = document.getElementById('jump-btn');
   if (jb) jb.hidden = tab !== 'simulator';
@@ -953,21 +977,34 @@ function init() {
   }
   jump.addEventListener('click', () => {
     const target = ctlInView ? document.getElementById('sim-top') : ctlPanel;
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // the simulator page is long: jump instantly over long distances, glide over short ones
+    const far = Math.abs(target.getBoundingClientRect().top) > 2500;
+    target.scrollIntoView({ behavior: far ? 'auto' : 'smooth', block: 'start' });
   });
 
   const tabs = [...document.querySelectorAll('[role="tab"]')];
   tabs.forEach((b, i) => {
-    b.addEventListener('click', () => showTab(b.dataset.tab));
+    b.addEventListener('click', () => showTab(b.dataset.tab, false, true));
     b.addEventListener('keydown', (ev) => {
       if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') {
         const j = (i + (ev.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
-        showTab(tabs[j].dataset.tab, true);
+        showTab(tabs[j].dataset.tab, true, true);
       }
     });
   });
-  document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => { showTab(b.dataset.goto); window.scrollTo(0, 0); }));
-  window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
+  document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => { showTab(b.dataset.goto, false, true); window.scrollTo(0, 0); }));
+  window.addEventListener('hashchange', () => showTab(location.hash.slice(1), false, true));
+  // top bar: hairline once the page scrolls; indicator follows layout changes
+  const header = document.getElementById('site-header');
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { header.classList.toggle('scrolled', window.scrollY > 4); ticking = false; });
+  }, { passive: true });
+  let resizeRaf = 0;
+  window.addEventListener('resize', () => { cancelAnimationFrame(resizeRaf); resizeRaf = requestAnimationFrame(() => positionIndicator(false)); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => positionIndicator(false));
   // theme: dark by default (set in <head> before paint); the toggle switches and remembers the choice
   const root = document.documentElement;
   const toggle = document.getElementById('theme-toggle');

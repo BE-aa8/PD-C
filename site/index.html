@@ -24,18 +24,9 @@
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
-<header class="site-header">
-  <div class="wrap">
-    <div class="brand">
-      <div class="brand-text">
-      <h1>Closing the Loop</h1>
-      <p class="sub">An artificial-pancreas control simulator · CHEE 4071 Process Dynamics and Control · Seborg Ex. 23.3 / Exercise 23.6</p>
-      </div>
-      <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false" title="Switch between dark and light">
-        <span class="dot" aria-hidden="true"></span><span class="theme-label">Light</span>
-      </button>
-    </div>
-    <p class="disclaimer" role="note"><strong>Educational process-control model of an illustrative textbook patient. Not medical advice. Not for dosing decisions.</strong></p>
+<header class="site-header" id="site-header">
+  <div class="wrap topbar">
+    <a class="wordmark" href="#overview" aria-label="Closing the Loop: back to the overview"><svg class="loop-glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19.8 3.6v3.7h-3.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg><span>Closing the Loop</span></a>
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button role="tab" id="tab-overview" data-tab="overview" aria-controls="panel-overview" aria-selected="true">Overview</button>
       <button role="tab" id="tab-simulator" data-tab="simulator" aria-controls="panel-simulator" aria-selected="false" tabindex="-1">Simulator</button>
@@ -45,15 +36,25 @@
       <button role="tab" id="tab-video" data-tab="video" aria-controls="panel-video" aria-selected="false" tabindex="-1">Video &amp; Transcript</button>
       <button role="tab" id="tab-refs" data-tab="refs" aria-controls="panel-refs" aria-selected="false" tabindex="-1">References</button>
     </nav>
+    <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false" title="Switch between dark and light">
+      <span class="dot" aria-hidden="true"></span><span class="theme-label">Light</span>
+    </button>
   </div>
 </header>
+<div class="disclaimer-strip">
+  <div class="wrap">
+    <p class="disclaimer" role="note"><svg class="note-glyph" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="4.9" r=".95" fill="currentColor"/></svg><strong>Educational process-control model of an illustrative textbook patient. Not medical advice. Not for dosing decisions.</strong></p>
+  </div>
+</div>
 
 <main class="wrap">
+  <h1 class="sr-only">Closing the Loop: an artificial-pancreas control simulator</h1>
   <noscript><p class="warn">This site needs JavaScript for the simulator, charts, and equations.</p></noscript>
   <div id="lib-warning" class="warnings"></div>
 
   <!-- 1. OVERVIEW -->
   <section role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
+    <p class="eyebrow">01 — Overview</p>
     <h2>What this is</h2>
     <p class="lead">A blood-glucose control loop treated as a chemical-process control problem. The "process" is the
       three-state glucose–insulin model of Seborg Example 23.3 (an <em>illustrative textbook patient</em>); the manipulated
@@ -102,6 +103,7 @@
 
   <!-- 2. SIMULATOR -->
   <section role="tabpanel" id="panel-simulator" aria-labelledby="tab-simulator" hidden>
+    <p class="eyebrow">02 — Simulator</p>
     <h2>Closed-loop simulator</h2>
     <p class="lead">Nonlinear model, RK4 with dt = 0.1 min; the PID runs every T<sub>s</sub> = 5 min on the sensor reading and
       holds its output in between (zero-order hold).</p>
@@ -156,6 +158,7 @@
 
   <!-- 3. THEORY -->
   <section role="tabpanel" id="panel-theory" aria-labelledby="tab-theory" hidden>
+    <p class="eyebrow">03 — Theory</p>
     <h2>Theory: model, linearization, reduction, feedforward</h2>
     <p class="lead">Every card shows the equation, its units, and what it means physically. Numbers are computed live from the Seborg Ex. 23.3 parameters.</p>
     <div id="theory-cards"></div>
@@ -163,6 +166,7 @@
 
   <!-- 4. CONTROL DESIGN -->
   <section role="tabpanel" id="panel-design" aria-labelledby="tab-design" hidden>
+    <p class="eyebrow">04 — Control Design</p>
     <h2>Control design: IMC tuning, block diagram, stability margins</h2>
     <p class="lead">These settings are shared with the Simulator tab: change τ<sub>c</sub> here and the simulator follows.</p>
     <div id="design-cards"></div>
@@ -170,6 +174,7 @@
 
   <!-- 5. AI WORKFLOW -->
   <section role="tabpanel" id="panel-ai" aria-labelledby="tab-ai" hidden>
+    <p class="eyebrow">05 — AI Workflow</p>
     <h2>AI Workflow</h2>
     <div class="placeholder"><span class="tag">Placeholder: content comes later</span>
       <p>This tab will document the process: plan v1 (Claude), the critique (Gemini) and each accept/reject decision with
@@ -179,6 +184,7 @@
 
   <!-- 6. VIDEO -->
   <section role="tabpanel" id="panel-video" aria-labelledby="tab-video" hidden>
+    <p class="eyebrow">06 — Video &amp; Transcript</p>
     <h2>Video &amp; Transcript</h2>
     <div class="placeholder"><span class="tag">Placeholder: added after recording</span>
       <p>The YouTube presentation link and its verbatim auto-generated transcript will appear here after the video is recorded.</p></div>
@@ -186,6 +192,7 @@
 
   <!-- 7. REFERENCES -->
   <section role="tabpanel" id="panel-refs" aria-labelledby="tab-refs" hidden>
+    <p class="eyebrow">07 — References</p>
     <h2>References</h2>
     <div class="placeholder" style="text-align:left"><span class="tag">Placeholder list: to be completed</span>
       <p>Sources cited by the parameters in <code>js/data.js</code> (items marked [TO VERIFY] are not yet checked against the original):</p>
@@ -200,9 +207,33 @@
 <button type="button" id="jump-btn" class="jump-btn" hidden aria-controls="sim-controls">⚙ Controls</button>
 
 <footer class="site-footer">
-  <div class="wrap">
-    <p><strong>Educational process-control model of an illustrative textbook patient. Not medical advice. Not for dosing decisions.</strong></p>
-    <p>CHEE 4071 AI project · Claude build · model from Seborg, Edgar, Mellichamp &amp; Doyle, <em>Process Dynamics and Control</em>, 4th ed., Ex. 23.3.</p>
+  <div class="wrap footer-grid">
+    <div class="foot-brand">
+      <p class="wordmark foot-wordmark"><svg class="loop-glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19.8 3.6v3.7h-3.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg><span>Closing the Loop</span></p>
+      <p>An artificial-pancreas control simulator · CHEE 4071 Process Dynamics and Control · Seborg Ex. 23.3 / Exercise 23.6</p>
+      <p class="foot-disclaimer"><strong>Educational process-control model of an illustrative textbook patient. Not medical advice. Not for dosing decisions.</strong></p>
+    </div>
+    <div class="foot-col">
+      <h4>Explore</h4>
+      <ul class="foot-links">
+        <li><button type="button" class="linklike" data-goto="overview">Overview</button></li>
+        <li><button type="button" class="linklike" data-goto="simulator">Simulator</button></li>
+        <li><button type="button" class="linklike" data-goto="theory">Theory</button></li>
+        <li><button type="button" class="linklike" data-goto="design">Control Design</button></li>
+        <li><button type="button" class="linklike" data-goto="ai">AI Workflow</button></li>
+        <li><button type="button" class="linklike" data-goto="video">Video &amp; Transcript</button></li>
+        <li><button type="button" class="linklike" data-goto="refs">References</button></li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h4>Project</h4>
+      <ul class="foot-links">
+        <li><a href="https://github.com/BE-aa8/PD-C">Source code and tests (GitHub)</a></li>
+        <li><a href="gemini/">Gemini comparison build (frozen)</a></li>
+        <li>Model: Seborg, Edgar, Mellichamp &amp; Doyle, <em>Process Dynamics and Control</em>, 4th ed., Ex. 23.3</li>
+        <li>Built with Plotly 2.35.2 and KaTeX 0.16.11 · Inter and Manrope fonts (SIL OFL) · hosted on GitHub Pages</li>
+      </ul>
+    </div>
   </div>
 </footer>
 </body>
