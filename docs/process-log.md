@@ -414,3 +414,24 @@ On a software renderer, live 3D stays slow by nature; the difference is that it 
 **Results (local, CDN served from local copies):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light`, `/gemini/` (device light and dark); content test 62/62 in both themes; extended slider/preset/manual check clean; no sideways scroll and no console errors at 1280, 1024, 768 and 375 px in both themes; screenshots reviewed.
 
 **Next step:** Andrew reviews Theory and Control Design on the live site; then Phase 6 (AI Workflow, Video & Transcript, References).
+
+### Part 21: redesign Phase 6 (AI Workflow, Video & Transcript, References)
+
+**Prompt (verbatim):** 36. "start phase 6"
+
+**Andrew's answers to Claude's questions (verbatim where quoted):** video → "Not yet (Recommended)"; credit → "First name: Andrew"; reflections → "Placeholders for me (Recommended)"; model names → "flash 3.5 and opus 5.5", then, asked which model ChatGPT was, "sorry, I meant just the basic model". Recorded as: the Gemini web-app critique was **Gemini 3.5 Flash**; the ChatGPT redesign brief came from **ChatGPT's default model (version not recorded)**. Plan approved: `docs/plan-redesign-phase6-claude.md`.
+
+**What the AI produced (from the records only; nothing invented):**
+- **AI Workflow tab:** the models and services; a seven-stage timeline (plan v1 → Gemini critique → Andrew's 26 decisions → two independent builds → tests and comparison → selection → redesign) with each stage's facts, Andrew's verbatim prompt where there is one, and links to the evidence files; the 26 critique decisions (21 accepted, 3 accepted modified, 1 accepted as [TO VERIFY], 1 rejected; all approved) transcribed from `docs/critique-decisions.md`; a Claude-vs-Gemini table with a source per row; ten key prompts quoted verbatim; a labelled link to Gemini's frozen build; two boxes marked "To be written by Andrew" for his conclusions and what he learned. The content lives in `site/js/workflow.js`.
+- **Video & Transcript tab:** a 16:9 stage with a labelled placeholder, the presentation details, and a transcript reader that says the transcript will be pasted verbatim. Adding the video later is one edit in `site/js/video.js` (YouTube id, date, transcript); the YouTube player then loads only when clicked.
+- **References tab:** five groups (textbook and theory; model and parameter sources from `data.js`; tools and data, including BodyParts3D; AI contributions; project contributions). Every [TO VERIFY] flag kept; author initials that are not in the project's sources were left out, and the Bequette (2002) full citation is marked [TO VERIFY].
+
+**Tests added (content test, now 73 checks):** 7 timeline stages that each open their own details; every evidence link points to a file that exists in the repository; every quoted prompt appears word for word in this log; the decision table matches `docs/critique-decisions.md` row by row; the Gemini link; Andrew's two boxes are placeholders; the video stays a placeholder while no YouTube id is set and the transcript is labelled, not invented; one reference per `DATA.sources` entry; the [TO VERIFY] flags are present; on phones the timeline is vertical with no sideways scroll.
+
+**Problem hit:** the decision-table check first failed because the table sits in a closed disclosure, where `innerText` is empty; the check now reads `textContent`.
+
+**Results (local, CDN served from local copies):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light`, `/gemini/` (device light and dark); content test 73/73 in both themes; extended check clean; no sideways scroll and no console errors at 1280, 1024, 768 and 375 px in both themes; screenshots reviewed.
+
+**Still needed from Andrew:** record and publish the video, then paste the YouTube id and the verbatim auto-generated transcript into `site/js/video.js`; write the two "To be written by Andrew" sections (and "My conclusions" in `docs/comparison.md`); check the [TO VERIFY] items against the textbook.
+
+**Next step:** Andrew reviews the three tabs on the live site; then Phase 7 (polish) from the master plan.

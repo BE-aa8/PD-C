@@ -2,6 +2,8 @@
 // Educational process-control model of an illustrative textbook patient. Not medical advice. Not for dosing decisions.
 import { DATA } from './data.js';
 import * as M from './model.js';
+import { REPO, MODELS, STAGES, PROMPTS, COMPARE, DECISIONS } from './workflow.js';
+import { VIDEO } from './video.js';
 
 const P = M.PARAMS;
 const LM = M.linearModel();
@@ -1131,7 +1133,75 @@ function renderDesign() {
 
 // ------------------------------------------------------------------ REFERENCES
 function renderRefs() {
-  document.getElementById('ref-list').innerHTML = Object.entries(DATA.sources).map(([k, v]) => `<li><code>${esc(k)}</code>: ${esc(v)}</li>`).join('');
+  // [TO VERIFY] inside a source string is kept and highlighted
+  const tv = (t) => esc(t).replace(/\[TO VERIFY[^\]]*\]/g, (m) => `<span class="tv">${m}</span>`);
+  document.getElementById('ref-list').innerHTML = Object.entries(DATA.sources).map(([k, v]) => `<li><code>${esc(k)}</code>: ${tv(v)}</li>`).join('');
+  document.getElementById('ref-ai').innerHTML = `<thead><tr><th>Model</th><th>Service</th><th>Contribution</th></tr></thead><tbody>${
+    MODELS.map((m) => `<tr><td><b>${esc(m.m)}</b></td><td>${esc(m.svc)}</td><td>${esc(m.did)}</td></tr>`).join('')}</tbody>`;
+  document.getElementById('ref-log-link').href = REPO + 'docs/process-log.md';
+}
+
+// ------------------------------------------------------------------ AI WORKFLOW (content from the project records)
+const docLink = (e) => `<a href="${REPO}${e.path}" data-path="${esc(e.path)}" target="_blank" rel="noopener">${esc(e.label)}</a>`;
+function buildWorkflow() {
+  document.getElementById('ai-models').innerHTML = MODELS.map((m) =>
+    `<div class="model-chip"><b>${esc(m.m)}</b><span>${esc(m.svc)}</span></div>`).join('');
+  // timeline: a rail of stage buttons (horizontal on wide screens, vertical on phones) + the selected stage's details
+  const tl = document.getElementById('ai-timeline');
+  tl.innerHTML = `<ol class="tl-rail" role="list">${STAGES.map((st) => `<li><button type="button" class="tl-step" data-stage="${st.id}" aria-controls="tl-panel" aria-pressed="false">
+      <span class="tl-n">${st.n}</span><span class="tl-who">${esc(st.who)}</span><span class="tl-role">${esc(st.role)}</span></button></li>`).join('')}</ol>
+    <div class="tl-panel card" id="tl-panel" aria-live="polite"></div>`;
+  const show = (id) => {
+    const st = STAGES.find((x) => x.id === id);
+    tl.querySelectorAll('.tl-step').forEach((b) => { const on = b.dataset.stage === id; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+    document.getElementById('tl-panel').innerHTML = `<p class="role">Stage ${st.n} · ${esc(st.role)}</p><h4>${esc(st.title)}</h4>
+      <p class="tl-by">By ${esc(st.who)}</p><ul class="clean tl-facts">${st.facts.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
+      ${st.quote ? `<blockquote class="tl-quote"><p>“${esc(st.quote.q)}”</p><footer>Andrew, prompt ${st.quote.n} (verbatim)</footer></blockquote>` : ''}
+      <p class="tl-ev"><span>Evidence:</span> ${st.evidence.map(docLink).join(' · ')}</p>`;
+  };
+  tl.querySelectorAll('.tl-step').forEach((b) => b.addEventListener('click', () => show(b.dataset.stage)));
+  show(STAGES[0].id);
+  // decisions: counts by kind + the full table
+  const kind = (d) => (d.startsWith('Reject') ? 'Rejected' : /modified/.test(d) ? 'Accepted, modified' : /TO VERIFY/.test(d) ? 'Accepted as [TO VERIFY]' : 'Accepted');
+  const counts = {};
+  DECISIONS.forEach((d) => { const k = kind(d.d); counts[k] = (counts[k] || 0) + 1; });
+  document.getElementById('ai-dec-summary').innerHTML = Object.entries(counts).map(([k, n]) =>
+    `<div class="metric ${k === 'Rejected' ? 'bad' : ''}"><div class="mv">${n}</div><div class="ml">${esc(k)}</div></div>`).join('') +
+    `<p class="strip-note">All ${DECISIONS.length} rows approved by Andrew: “approve all, go with your recommendations.” Source: ${docLink({ label: 'docs/critique-decisions.md', path: 'docs/critique-decisions.md' })}</p>`;
+  document.getElementById('ai-dec-table').innerHTML = `<thead><tr><th>#</th><th>Gemini's suggestion</th><th>Severity</th><th>Decision</th><th>Reasoning</th></tr></thead><tbody>${
+    DECISIONS.map((d) => `<tr data-kind="${esc(kind(d.d))}"><td class="num">${d.n}</td><td>${esc(d.s)}</td><td>${esc(d.sev)}</td><td><b>${esc(d.d)}</b></td><td>${esc(d.r)}</td></tr>`).join('')}</tbody>`;
+  document.getElementById('ai-cmp-table').innerHTML = `<thead><tr><th>Measure</th><th>Claude (Opus 5.5)</th><th>Gemini (3.8-flash)</th><th>Source</th></tr></thead><tbody>${
+    COMPARE.map(([k, c, g, src]) => `<tr><td>${esc(k)}</td><td>${esc(c)}</td><td>${esc(g)}</td><td class="src">${esc(src)}</td></tr>`).join('')}</tbody>`;
+  document.getElementById('ai-cmp-link').href = REPO + 'docs/comparison.md';
+  document.getElementById('ai-log-link').href = REPO + 'docs/process-log.md';
+  document.getElementById('ai-prompts').innerHTML = PROMPTS.map((p) =>
+    `<li><blockquote><p>“${esc(p.q)}”</p></blockquote><p class="pr-ctx"><span class="pr-n">Prompt ${p.n}</span> ${esc(p.ctx)}</p></li>`).join('');
+}
+
+// ------------------------------------------------------------------ VIDEO (site/js/video.js holds the link and transcript)
+function buildVideo() {
+  const stage = document.getElementById('video-stage');
+  const id = VIDEO.youtubeId && /^[\w-]{6,20}$/.test(VIDEO.youtubeId) ? VIDEO.youtubeId : null;
+  if (!id) {
+    stage.dataset.state = 'placeholder';
+    stage.innerHTML = `<div class="video-ph"><span class="tag">Placeholder</span><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19 15l14 9-14 9z" fill="currentColor"/></svg>
+      <p class="video-ph-t">Presentation video: added after recording</p><p class="video-ph-s">The YouTube link and its verbatim auto-generated transcript will appear here.</p></div>`;
+  } else {
+    // click to load: the YouTube player (and its scripts) load only when asked for
+    stage.dataset.state = 'poster';
+    stage.innerHTML = `<button type="button" class="video-poster" id="video-play" aria-label="Play the presentation video (loads YouTube)">
+      <img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="" loading="lazy"><span class="video-play-ic" aria-hidden="true">▶</span></button>`;
+    document.getElementById('video-play').addEventListener('click', () => {
+      stage.dataset.state = 'playing';
+      stage.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" title="Closing the Loop: presentation video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+    });
+  }
+  if (VIDEO.recordedOn) document.getElementById('video-date').textContent = VIDEO.recordedOn;
+  const tb = document.getElementById('transcript-body');
+  const tx = (VIDEO.transcript || '').trim();
+  tb.innerHTML = tx
+    ? tx.split(/\n{2,}/).map((para) => `<p>${esc(para).replace(/\n/g, '<br>')}</p>`).join('')
+    : '<p class="transcript-empty"><span class="tag">Placeholder</span> The YouTube auto-generated transcript will be pasted here verbatim after the video is published.</p>';
 }
 
 // ------------------------------------------------------------------ OVERVIEW (story + 3D pancreas)
@@ -1590,6 +1660,7 @@ function init() {
     .observe(root, { attributes: true, attributeFilter: ['data-theme'] });
   syncToggle();
   try { buildOverview(); } catch (e) { console.warn('overview visuals failed', e); }
+  try { buildWorkflow(); buildVideo(); } catch (e) { console.warn('workflow/video content failed', e); }
   initReveal();
   showTab(location.hash ? location.hash.slice(1) : 'overview');
 }

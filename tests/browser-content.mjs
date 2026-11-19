@@ -7,7 +7,7 @@
 //   node tests/browser-content.mjs --base http://localhost:8000          # also: --theme light, --scheme dark
 // Exit code 1 if any check fails.
 import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 const { chromium } = createRequire(import.meta.url)('playwright');
@@ -146,6 +146,47 @@ check('Theory navigator marks the chapter in view', (await page.locator('#theory
 await page.click('[data-tab="design"]');
 await page.waitForTimeout(500);
 
+// 5c. AI Workflow, Video, References (redesign Phase 6): content must match the project records, nothing invented
+await page.click('[data-tab="ai"]');
+await page.waitForTimeout(500);
+const stagesUI = await page.locator('#ai-timeline .tl-step').evaluateAll((els) => els.map((e) => e.dataset.stage));
+const stageTitles = new Set();
+for (const id of stagesUI) {
+  await page.locator(`#ai-timeline .tl-step[data-stage="${id}"]`).click();
+  stageTitles.add((await page.locator('#tl-panel h4').innerText()).trim());
+}
+check('AI timeline: 7 stages, each opens its own details', stagesUI.length === 7 && stageTitles.size === 7, `${stagesUI.length} stages, ${stageTitles.size} titles`);
+const wf = await page.evaluate(async () => import(new URL('js/workflow.js', location.href)).then((m) => ({ STAGES: m.STAGES, PROMPTS: m.PROMPTS, DECISIONS: m.DECISIONS })));
+const evPaths = [...new Set(wf.STAGES.flatMap((st) => st.evidence.map((e) => e.path)))];
+const missing = evPaths.filter((pth) => !existsSync(join(ROOT, pth)));
+check('Every evidence link points to a file in the repository', evPaths.length >= 10 && missing.length === 0, missing.join(', ') || `${evPaths.length} files`);
+const logTxt = readFileSync(join(ROOT, 'docs/process-log.md'), 'utf8');
+const quotes = [...wf.PROMPTS.map((x) => x.q), ...wf.STAGES.filter((st) => st.quote).map((st) => st.quote.q)];
+const notFound = quotes.filter((q) => !logTxt.includes(q));
+check('Every quoted prompt appears verbatim in docs/process-log.md', quotes.length >= 10 && notFound.length === 0, notFound.map((q) => q.slice(0, 40)).join(' | ') || `${quotes.length} quotes`);
+const mdRows = readFileSync(join(ROOT, 'docs/critique-decisions.md'), 'utf8').split('\n').filter((l) => /^\| \d+ \|/.test(l));
+const mdDec = mdRows.map((l) => l.split(' | ')[3].replace(/\*\*/g, '').trim());
+const uiDec = await page.locator('#ai-dec-table tbody tr td:nth-child(4)').allTextContents(); // inside a closed disclosure: textContent
+check('Decision table = docs/critique-decisions.md (26 rows, same decisions, all approved)', mdRows.length === 26 && uiDec.length === 26 && uiDec.every((d, i) => d.trim() === mdDec[i]) && mdRows.every((l) => l.includes('✅')), `${uiDec.length} rows`);
+check('Gemini build link points to /gemini/', (await page.locator('#ai-gemini-link').getAttribute('href')) === 'gemini/', '');
+check('Andrew\'s conclusions are placeholders (not written by AI)', (await page.locator('.own-box[data-owner="andrew"] .tag').allInnerTexts()).every((t) => /To be written by Andrew/.test(t)) && (await page.locator('.own-box').count()) === 2, '');
+await page.click('[data-tab="video"]');
+await page.waitForTimeout(400);
+const vcfg = await page.evaluate(async () => import(new URL('js/video.js', location.href)).then((m) => m.VIDEO));
+const vstate = await page.locator('#video-stage').getAttribute('data-state');
+check('Video: placeholder until a YouTube id is set', vcfg.youtubeId ? vstate === 'poster' : (vstate === 'placeholder' && (await page.locator('#video-stage iframe').count()) === 0), `state ${vstate}`);
+await page.locator('#transcript summary').click();
+const tOpen = await page.locator('#transcript').evaluate((el) => el.open);
+const tText = await page.locator('#transcript-body').innerText();
+check('Transcript reader opens; empty transcript is labelled, not invented', tOpen && (vcfg.transcript.trim() ? tText.includes(vcfg.transcript.trim().slice(0, 40)) : /Placeholder/.test(tText)), '');
+await page.click('[data-tab="refs"]');
+await page.waitForTimeout(400);
+const nSources = await page.evaluate(async () => Object.keys((await import(new URL('js/data.js', location.href))).DATA.sources).length);
+check('References: one #ref-list item per DATA.sources entry', (await page.locator('#ref-list li').count()) === nSources, `${nSources} sources`);
+check('References keep the [TO VERIFY] flags', (await page.locator('#panel-refs .tv').count()) >= 4, `${await page.locator('#panel-refs .tv').count()} flags`);
+await page.click('[data-tab="design"]');
+await page.waitForTimeout(300);
+
 // 5b. Simulator workspace (redesign Phase 4): KPI flag, Reset, help, linked time axes, saved-run chips
 await page.click('#tab-simulator');
 await page.waitForTimeout(800);
@@ -231,6 +272,13 @@ check('Phone: vertical block diagram, no horizontal scroll', tallD === 1 && swd[
 check('Phone: chapter select instead of the list', await m.locator('#design-nav select').isVisible() && !(await m.locator('#design-nav .chapnav-list').isVisible()), '');
 await m.click('#tab-overview');
 await m.waitForTimeout(600);
+await m.click('#tab-ai');
+await m.waitForTimeout(500);
+const railCols = await m.locator('.tl-rail').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+const swa = await m.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+check('Phone: AI timeline is vertical, no horizontal scroll', railCols === 1 && swa[0] <= swa[1] + 1, `${railCols} columns, ${swa}`);
+await m.click('#tab-overview');
+await m.waitForTimeout(400);
 check('Phone: Overview loop drawn vertically', await m.locator('#loop-svg').evaluate((el) => el.classList.contains('vertical') && el.getAttribute('viewBox') === '0 0 330 540'), '');
 await m.close();
 

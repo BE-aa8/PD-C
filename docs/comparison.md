@@ -145,6 +145,9 @@ Later changes to Claude's site (listed so the comparison stays honest):
   each with a chapter navigator; an interactive block diagram (select a block for its transfer function and live
   numbers) with a purpose-drawn vertical version for phones; a margin metric strip; the Overview loop drawn vertically
   on phones. Presentation only; every equation stays visible.
+- Redesign Phase 6 (`docs/plan-redesign-phase6-claude.md`): the AI Workflow, Video & Transcript and References tabs
+  filled from the project records (this comparison's numbers appear there as a summary table with sources); Andrew's
+  conclusions remain a placeholder for him to write.
 
 ## 6. Process lessons
 - **"Renders" is not "correct":** the smoke test checks that each chart has an SVG, so a chart with no data passes.

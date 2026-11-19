@@ -329,38 +329,130 @@
   <!-- 5. AI WORKFLOW -->
   <section role="tabpanel" id="panel-ai" aria-labelledby="tab-ai" hidden>
     <p class="eyebrow">05 — AI Workflow</p>
-    <h2>AI Workflow</h2>
-    <div class="placeholder"><span class="tag">Placeholder: content comes later</span>
-      <p>This tab will document the process: plan v1 (Claude), the critique (Gemini) and each accept/reject decision with
-        the student's reasoning, plan v2, the two independent builds (Claude and Gemini), the prompts used, and the
-        test-based comparison. It will be filled from the project's <code>docs/</code> folder.</p></div>
+    <h2>How this was built with AI</h2>
+    <p class="lead">One model planned, a different model critiqued, Andrew decided what to accept, two models built the website
+      independently from the same prompt, and the same tests graded both. Everything below comes from the project's records,
+      linked at each step.</p>
+    <div id="ai-models" class="ai-models"></div>
+    <div id="ai-timeline" class="timeline"></div>
+    <section class="ai-sec" aria-labelledby="ai-dec-h">
+      <p class="eyebrow">Accept / reject</p>
+      <h3 id="ai-dec-h">Gemini's critique: 26 decisions</h3>
+      <div id="ai-dec-summary" class="dec-summary"></div>
+      <details class="disclosure" id="ai-dec-details">
+        <summary><span class="disc-title">Show all 26 rows with the reasoning</span></summary>
+        <div class="panel"><div class="table-wrap"><table id="ai-dec-table" class="dec-table"></table></div></div>
+      </details>
+    </section>
+    <section class="ai-sec" aria-labelledby="ai-cmp-h">
+      <p class="eyebrow">Comparison</p>
+      <h3 id="ai-cmp-h">Claude vs Gemini, same prompt and tests</h3>
+      <div class="panel"><div class="table-wrap"><table id="ai-cmp-table" class="cmp-table"></table></div>
+        <p class="chart-cap">Selected rows from the full comparison (setup held equal, fairness caveats, every source):
+          <a id="ai-cmp-link" href="#">docs/comparison.md</a>. Claude wrote the comparison and built one of the two sites, so every row cites its source.</p></div>
+      <div class="gemini-card">
+        <div><p class="role">Frozen artefact</p><h4>Gemini's build, unchanged</h4>
+          <p>Kept exactly as Gemini produced it, for comparison. It has known problems listed above.</p></div>
+        <a class="btn" id="ai-gemini-link" href="gemini/">Open Gemini's build ↗</a>
+      </div>
+    </section>
+    <section class="ai-sec" aria-labelledby="ai-pr-h">
+      <p class="eyebrow">Prompts</p>
+      <h3 id="ai-pr-h">Key prompts, verbatim</h3>
+      <ol id="ai-prompts" class="prompts"></ol>
+      <p class="chart-cap">All 35 prompts and every decision, session by session: <a id="ai-log-link" href="#">docs/process-log.md</a>.</p>
+    </section>
+    <section class="ai-sec" aria-labelledby="ai-own-h">
+      <p class="eyebrow">In Andrew's words</p>
+      <h3 id="ai-own-h">Conclusions and what I learned</h3>
+      <div class="grid two">
+        <div class="own-box" data-owner="andrew"><span class="tag">To be written by Andrew</span><h4>My conclusions on the comparison</h4>
+          <ul class="clean"><li>Which build would I ship, and why?</li><li>Which difference surprised me most?</li><li>What would I change next time?</li></ul></div>
+        <div class="own-box" data-owner="andrew"><span class="tag">To be written by Andrew</span><h4>What I learned, and what I want to learn next</h4>
+          <ul class="clean"><li>Process control: what the model and the AI tools taught me</li><li>Working with AI: where my decisions mattered</li><li>What I want to learn more of</li></ul></div>
+      </div>
+    </section>
   </section>
 
   <!-- 6. VIDEO -->
   <section role="tabpanel" id="panel-video" aria-labelledby="tab-video" hidden>
     <p class="eyebrow">06 — Video &amp; Transcript</p>
     <h2>Video &amp; Transcript</h2>
-    <div class="placeholder"><span class="tag">Placeholder: added after recording</span>
-      <p>The YouTube presentation link and its verbatim auto-generated transcript will appear here after the video is recorded.</p></div>
+    <div class="video-layout">
+      <div class="video-stage" id="video-stage"></div>
+      <aside class="video-meta">
+        <p class="role">Presentation</p>
+        <h3>Closing the Loop: an artificial-pancreas control simulator</h3>
+        <p>A walk-through of the simulator and the AI workflow behind it: the glucose–insulin model of Seborg Example 23.3,
+          IMC-tuned PID feedback, feedforward, the stability limit set by the sensor delay, and how two AI models built the site.</p>
+        <dl class="video-facts">
+          <div><dt>Course</dt><dd>CHEE 4071 Process Dynamics and Control</dd></div>
+          <div><dt>Textbook basis</dt><dd>Seborg et al., 4th ed., Ex. 23.3 / Exer. 23.6</dd></div>
+          <div><dt>Recorded</dt><dd id="video-date">not yet</dd></div>
+          <div><dt>Transcript source</dt><dd>YouTube auto-generated, verbatim</dd></div>
+        </dl>
+      </aside>
+    </div>
+    <details class="disclosure transcript" id="transcript">
+      <summary><span class="eyebrow">Transcript</span><span class="disc-title">Read the verbatim transcript</span></summary>
+      <div class="panel transcript-body" id="transcript-body"></div>
+    </details>
   </section>
 
   <!-- 7. REFERENCES -->
   <section role="tabpanel" id="panel-refs" aria-labelledby="tab-refs" hidden>
     <p class="eyebrow">07 — References</p>
-    <h2>References</h2>
-    <div class="placeholder" style="text-align:left"><span class="tag">Placeholder list: to be completed</span>
-      <p>Sources cited by the parameters in <code>js/data.js</code> (items marked [TO VERIFY] are not yet checked against the original):</p>
-      <ul class="clean" id="ref-list"></ul>
-      <p>Software: Plotly.js 2.35.2 (charts), KaTeX 0.16.11 (equations), three.js 0.170.0 (3D viewer, MIT licence).</p>
-      <p>3D anatomy (Overview): BodyParts3D, &copy; The Database Center for Life Science, licensed under
-        <a href="https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en">CC Attribution-Share Alike 2.1 Japan</a>.
-        Mitsuhashi N, Fujieda K, Tamura T, Kawamoto S, Takagi T, Okubo K. BodyParts3D: 3D structure database for anatomical
-        concepts. <i>Nucleic Acids Res.</i> 2009;37(Database issue):D782&ndash;5. doi:10.1093/nar/gkn613.
-        Adapted (merged, re-centred, smoothed; schematic islet points added) by <code>tools/build_pancreas_mesh.mjs</code>; the
-        adapted mesh and its two still renders in <a href="models/LICENSE-BodyParts3D.txt">site/models/</a> are shared under the same licence.</p>
-      <h3>Contributions</h3>
-      <p>Individual project. Contributions will be listed here (student: direction, decisions and review; AI models: as documented on the AI Workflow tab).</p>
-    </div>
+    <h2>References and attribution</h2>
+    <p class="lead">Sources are grouped by role. Items marked [TO VERIFY] have not yet been checked against the original.</p>
+    <section class="ref-group" aria-labelledby="ref-h1"><p class="ref-num">01</p><div>
+      <h3 id="ref-h1">Textbook and theoretical sources</h3>
+      <ol class="refs">
+        <li>Seborg, Edgar, Mellichamp &amp; Doyle. <i>Process Dynamics and Control</i>, 4th ed. Wiley.
+          Example 23.3 (glucose–insulin model), Exercise 23.6 (sensor delay, part e), Sec. 23.2 (CGM sample period), Table 12.1 (IMC tuning relations).
+          Stability-margin rule-of-thumb ranges (PM ≥ 30°, GM ≥ 1.7), Ch. 14 <span class="tv">[TO VERIFY]</span>.</li>
+        <li>Bequette (2002): source of the glucose–insulin model, as cited in Seborg Example 23.3 (full citation <span class="tv">[TO VERIFY]</span>).</li>
+        <li>Skogestad (2003), SIMC tuning guideline τ<sub>c</sub> = θ; Rivera et al. (1986), τ<sub>c</sub> &gt; 0.8θ.
+          Both as quoted for the τ<sub>c</sub> guideline <span class="tv">[TO VERIFY in Seborg Ch. 12]</span>.</li>
+        <li>β-cells in the pancreatic islets release insulin: Seborg et al., Ch. 23 <span class="tv">[TO VERIFY]</span>.</li>
+      </ol></div></section>
+    <section class="ref-group" aria-labelledby="ref-h2"><p class="ref-num">02</p><div>
+      <h3 id="ref-h2">Model and parameter sources</h3>
+      <p>Cited by the parameters in <code>js/data.js</code> (the full parameter table, with a source per row, is on the Theory tab):</p>
+      <ul class="clean refs-data" id="ref-list"></ul></div></section>
+    <section class="ref-group" aria-labelledby="ref-h3"><p class="ref-num">03</p><div>
+      <h3 id="ref-h3">Computational tools and data</h3>
+      <ol class="refs">
+        <li>Plotly.js 2.35.2 (charts), KaTeX 0.16.11 (equations), three.js 0.170.0 (3D viewer, MIT licence), loaded from public CDNs.</li>
+        <li>Inter and Manrope typefaces, SIL Open Font License, self-hosted.</li>
+        <li>BodyParts3D, &copy; The Database Center for Life Science, licensed under
+          <a href="https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en">CC Attribution-Share Alike 2.1 Japan</a>.
+          Mitsuhashi N, Fujieda K, Tamura T, Kawamoto S, Takagi T, Okubo K. BodyParts3D: 3D structure database for anatomical
+          concepts. <i>Nucleic Acids Res.</i> 2009;37(Database issue):D782&ndash;5. doi:10.1093/nar/gkn613.
+          Adapted (merged, re-centred, smoothed; schematic islet points added) by <code>tools/build_pancreas_mesh.mjs</code>; the
+          adapted mesh and its two still renders in <a href="models/LICENSE-BodyParts3D.txt">site/models/</a> are shared under the same licence.</li>
+        <li>Independent Python reference (<code>ap-sim/</code>, NumPy/SciPy) that generates the expected test values; Playwright for browser tests;
+          GitHub Actions (CI, the Gemini build runner) and GitHub Pages (hosting).</li>
+      </ol></div></section>
+    <section class="ref-group" aria-labelledby="ref-h4"><p class="ref-num">04</p><div>
+      <h3 id="ref-h4">AI contributions</h3>
+      <div class="table-wrap"><table class="ai-table" id="ref-ai"></table></div>
+      <p class="chart-cap">Details, prompts and decisions: the AI Workflow tab and <a id="ref-log-link" href="#">docs/process-log.md</a>.</p></div></section>
+    <section class="ref-group" aria-labelledby="ref-h5"><p class="ref-num">05</p><div>
+      <h3 id="ref-h5">Project contributions</h3>
+      <p>Individual project.</p>
+      <div class="grid two">
+        <div class="card"><h4>Andrew</h4><ul class="clean">
+          <li>Set the direction and the workflow (the same pathway as his separations project)</li>
+          <li>Approved or rejected every plan and all 26 critique decisions</li>
+          <li>Chose the models, the budget and the hosting; ran the Gemini key and repository setup</li>
+          <li>Selected Claude's build; asked for the 3D pancreas; tested the site on his own devices</li>
+          <li>Records and presents the video; writes the conclusions and reflections</li></ul></div>
+        <div class="card"><h4>AI models</h4><ul class="clean">
+          <li>Claude Opus 5.5: plans, code, tests, documents, the comparison, the redesign</li>
+          <li>Gemini 3.5 Flash: the critique of plan v1</li>
+          <li>Gemini (CLI): the second, frozen website build</li>
+          <li>ChatGPT (default model): the redesign brief and visual-reference notes</li></ul></div>
+      </div></div></section>
   </section>
 </main>
 
