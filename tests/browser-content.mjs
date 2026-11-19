@@ -109,6 +109,43 @@ for (const cs of ['unannounced', 'announced']) {
   }, cs);
   check(`P9 (${cs}) = DATA.mpcComparison`, p9.every(Boolean), JSON.stringify(p9));
 }
+// 5a. Theory and Control Design layout (redesign Phase 5): chapter navigators, interactive block diagram, margin strip
+const mstrip = await page.locator('#ds-margin-strip').innerText();
+check('Margin strip shows the reference PM and GM', mstrip.includes(m10.PM_deg.toFixed(1)) && mstrip.includes(m10.GM.toFixed(2)), mstrip.replace(/\s+/g, ' ').slice(0, 120));
+check('Control Design navigator lists 8 chapters', (await page.locator('#design-nav button[data-chap]').count()) === 8, '');
+const blocks = await page.locator('#block-diagram .blk').evaluateAll((els) => els.map((e) => e.dataset.k));
+const seen = new Set();
+for (const k of blocks) {
+  await page.locator(`#block-diagram .blk[data-k="${k}"]`).click();
+  seen.add((await page.locator('#block-info h4').innerText()).trim());
+}
+check('Each diagram block opens its own details', blocks.length >= 7 && seen.size === blocks.length && (await page.locator('#block-info .katex').count()) > 0, `${blocks.length} blocks, ${seen.size} titles`);
+await page.locator('#block-diagram .blk[data-k="ctrl"]').click();
+await page.locator('#ds-tau_c').evaluate((el) => { el.value = '40'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+await page.waitForTimeout(700);
+const kc40 = await page.evaluate(async () => {
+  const M = await import(new URL('js/model.js', location.href));
+  return Math.abs(M.imcTuning({ model: 'fit_sopdt', tau_c: 40, theta_sensor: 10, Ts: 5, include_zoh: false }).Kc).toFixed(4);
+});
+const ctrlInfo = await page.locator('#block-info').innerText();
+check('Controller block follows a τc change (live Kc)', ctrlInfo.includes(kc40) && (await page.locator('#block-diagram .blk[data-k="ctrl"]').getAttribute('aria-pressed')) === 'true', `Kc ${kc40}`);
+await page.locator('#ds-tau_c').evaluate((el) => { el.value = '20'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+await page.waitForTimeout(500);
+await page.click('[data-tab="theory"]');
+await page.waitForTimeout(700);
+const thChaps = await page.locator('#theory-nav button[data-chap]').evaluateAll((els) => els.map((e) => e.dataset.chap));
+let jumps = 0;
+for (const id of thChaps) {
+  await page.locator(`#theory-nav button[data-chap="${id}"]`).click();
+  await page.waitForTimeout(900);
+  const top = await page.locator(`#${id}`).evaluate((el) => el.getBoundingClientRect().top);
+  if (top >= 0 && top < 260) jumps++;
+}
+check('Theory navigator lists 5 chapters and jumps to each', thChaps.length === 5 && jumps === 5, `${jumps}/${thChaps.length}`);
+check('Theory navigator marks the chapter in view', (await page.locator('#theory-nav button[aria-current]').getAttribute('data-chap')) === thChaps[4], '');
+await page.click('[data-tab="design"]');
+await page.waitForTimeout(500);
+
 // 5b. Simulator workspace (redesign Phase 4): KPI flag, Reset, help, linked time axes, saved-run chips
 await page.click('#tab-simulator');
 await page.waitForTimeout(800);
@@ -185,6 +222,16 @@ const top = await m.evaluate(() => document.getElementById('sim-controls').getBo
 check('Phone: button scrolls to the controls', top < 400 && top > -50, `controls top at ${Math.round(top)} px`);
 const sw = await m.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
 check('Phone: no horizontal scroll', sw[0] <= sw[1] + 1, `${sw[0]} > ${sw[1]}`);
+// phones get purpose-drawn vertical diagrams and a chapter select instead of the sticky list
+await m.click('#tab-design');
+await m.waitForTimeout(900);
+const tallD = await m.locator('#block-diagram svg.tall-d').count();
+const swd = await m.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+check('Phone: vertical block diagram, no horizontal scroll', tallD === 1 && swd[0] <= swd[1] + 1, `tall ${tallD}, ${swd}`);
+check('Phone: chapter select instead of the list', await m.locator('#design-nav select').isVisible() && !(await m.locator('#design-nav .chapnav-list').isVisible()), '');
+await m.click('#tab-overview');
+await m.waitForTimeout(600);
+check('Phone: Overview loop drawn vertically', await m.locator('#loop-svg').evaluate((el) => el.classList.contains('vertical') && el.getAttribute('viewBox') === '0 0 330 540'), '');
 await m.close();
 
 // 6. Overview (redesign Phase 3): the hero trace and the chapter numbers are the model's output, and the 3D viewer works

@@ -141,6 +141,10 @@ Later changes to Claude's site (listed so the comparison stays honest):
   and detailed-metrics sections; a help panel). Adds a Reset button and removable saved-run chips. Presentation only.
 - 3D performance fix (`docs/plan-3d-performance-claude.md`): live 3D only with a hardware renderer (otherwise still
   images), the full viewer starts on tap, one WebGL context at a time, both released when leaving the Overview.
+- Redesign Phase 5 (`docs/plan-redesign-phase5-claude.md`): Theory in the brief's 5 chapters and Control Design in its 8,
+  each with a chapter navigator; an interactive block diagram (select a block for its transfer function and live
+  numbers) with a purpose-drawn vertical version for phones; a margin metric strip; the Overview loop drawn vertically
+  on phones. Presentation only; every equation stays visible.
 
 ## 6. Process lessons
 - **"Renders" is not "correct":** the smoke test checks that each chart has an SVG, so a chart with no data passes.

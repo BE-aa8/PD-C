@@ -232,7 +232,7 @@ const SIM_SPEC = [
   ] },
 ];
 const DESIGN_SPEC = [
-  { legend: 'Tuning inputs (shared with the Simulator)', items: [
+  { legend: null, items: [
     TUNING_MODE_ITEM(null),
     { key: 'model', type: 'select', label: 'Reduced model → controller', opts: MODEL_OPTS, show: (s) => s.tuning_mode !== 'manual' },
     { key: 'tau_c', type: 'range', label: 'τc closed-loop time constant', min: 2, max: 100, step: 1, unit: 'min', d: 0, show: (s) => s.tuning_mode !== 'manual' },
@@ -562,43 +562,83 @@ function renderSweeps() {
 
 // ------------------------------------------------------------------ THEORY
 let theoryBuilt = false;
+// ------------------------------------------------------------------ chapters (Theory, Control Design)
+// editorial chapter header + a navigator: sticky list on wide screens, a "Jump to" select on narrow ones.
+// Buttons, not <nav> links (the smoke test counts nav anchors as tabs).
+const chapHead = (id, num, title, intro) =>
+  `<header class="chap-head" id="${id}"><span class="chap-num" aria-hidden="true">${num}</span><div><h2 class="chap-title"><span class="sr-only">${+num}. </span>${title}</h2><p class="chap-intro">${intro}</p></div></header>`;
+function chapterNav(host, chapters, label) {
+  host.innerHTML = `<p class="chapnav-h">${label}</p><ol class="chapnav-list">${chapters.map((c) =>
+    `<li><button type="button" data-chap="${c.id}"><span class="cn">${c.num}</span><span>${c.title}</span></button></li>`).join('')}</ol>
+    <label class="chapnav-sel"><span class="sr-only">Jump to a chapter</span><select aria-label="Jump to a chapter">${chapters.map((c) =>
+    `<option value="${c.id}">${c.num} · ${esc(c.title)}</option>`).join('')}</select></label>`;
+  const go = (id) => document.getElementById(id).scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  host.querySelectorAll('button[data-chap]').forEach((b) => b.addEventListener('click', () => go(b.dataset.chap)));
+  const sel = host.querySelector('select');
+  sel.addEventListener('change', () => go(sel.value));
+  const mark = (id) => {
+    host.querySelectorAll('button[data-chap]').forEach((b) => b.toggleAttribute('aria-current', b.dataset.chap === id));
+    sel.value = id;
+  };
+  mark(chapters[0].id);
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => {
+      const vis = es.filter((e) => e.isIntersecting).sort((x, y) => x.boundingClientRect.top - y.boundingClientRect.top);
+      if (vis.length) mark(vis[0].target.dataset.chapter);
+    }, { rootMargin: '-15% 0px -60% 0px' });
+    chapters.forEach((c) => { const sec = document.getElementById(c.id).closest('.chapter'); sec.dataset.chapter = c.id; io.observe(sec); });
+  }
+}
+const THEORY_CHAPTERS = [
+  { id: 'th-c1', num: '01', title: 'Nonlinear glucose–insulin model' },
+  { id: 'th-c2', num: '02', title: 'Units and physical interpretation' },
+  { id: 'th-c3', num: '03', title: 'Linearization and transfer functions' },
+  { id: 'th-c4', num: '04', title: 'Nonlinear gain and half-rule analysis' },
+  { id: 'th-c5', num: '05', title: 'Feedforward and bolus' },
+];
 function buildTheory() {
   const root = document.getElementById('theory-cards');
-  root.innerHTML = `
-  <div class="section"><h2>1 · The process model</h2></div>
-  <div class="grid two">
-    <div id="th-ode"></div><div id="th-units"></div>
-  </div>
-  <div class="panel" style="margin-top:14px"><h3>Parameters (Seborg Ex. 23.3)</h3><div class="table-wrap"><table id="param-table"></table></div></div>
-  <div class="grid two" style="margin-top:14px"><div id="th-basal"></div><div id="th-ss"></div></div>
+  const [c1, c2, c3, c4, c5] = THEORY_CHAPTERS;
+  root.innerHTML = `<div class="doc-layout"><aside class="chapnav" id="theory-nav" aria-label="Theory chapters"></aside><div class="doc-body">
+  <section class="chapter">${chapHead(c1.id, c1.num, c1.title, 'Three ordinary differential equations describe blood glucose, the remote insulin effect and plasma insulin. Every parameter comes from Seborg Ex. 23.3.')}
+    <div id="th-ode"></div>
+    <div class="panel" style="margin-top:14px"><h3>Parameters (Seborg Ex. 23.3)</h3><div class="table-wrap"><table id="param-table"></table></div></div>
+  </section>
 
-  <div class="section"><h2>2 · Linearization and transfer functions</h2></div>
-  <div class="grid two"><div id="th-abc"></div><div id="th-tf"></div></div>
+  <section class="chapter">${chapHead(c2.id, c2.num, c2.title, 'What the units say about the model, where the basal state sits, and why the pump can push glucose down much harder than it can let it rise.')}
+    <div class="grid two"><div id="th-units"></div><div id="th-ss"></div></div>
+    <div style="margin-top:14px" id="th-basal"></div>
+  </section>
 
-  <div class="section"><h2>3 · Nonlinear steady-state gain</h2></div>
-  <div class="grid two"><div id="th-gain"></div>
-    <div class="panel"><div id="th-gain-ctl"></div><p class="chart-title">P4 · Steady-state gain vs ΔU</p><div id="p4" class="chart"></div>
-    <p class="chart-cap">The linear model uses one gain K<sub>p</sub> for every step size; the real (nonlinear) gain shrinks for large insulin increases and grows for cuts. Diamond = current ΔU.</p></div></div>
+  <section class="chapter">${chapHead(c3.id, c3.num, c3.title, 'Linearizing around the basal state gives a state-space model and the process and disturbance transfer functions used for tuning.')}
+    <div class="grid two"><div id="th-abc"></div><div id="th-tf"></div></div>
+  </section>
 
-  <div class="section"><h2>4 · Model reduction: half rule vs least-squares fits</h2></div>
-  <div class="grid two"><div id="th-half"></div><div id="th-fits"></div></div>
-  <div class="panel" style="margin-top:14px"><p class="chart-title">P5 · Step responses to ΔU (same slider as P4)</p><div id="p5" class="chart tall"></div>
-    <p class="chart-cap">Nonlinear = RK4 simulation of the full model (open loop, no meal); linear = 3rd-order transfer function; the fits were made offline at ΔU = +1 mU/min by the Python reference, so they drift from the nonlinear curve for large steps.</p></div>
+  <section class="chapter">${chapHead(c4.id, c4.num, c4.title, 'The real gain depends on the size of the insulin step. Low-order models with dead time, from the half rule or from least-squares fits, feed the IMC tuning.')}
+    <div class="grid two"><div id="th-gain"></div>
+      <div class="panel chart-panel"><div id="th-gain-ctl" class="inline-ctl"></div><p class="chart-title">P4 · Steady-state gain vs ΔU</p><div id="p4" class="chart"></div>
+      <p class="chart-cap">The linear model uses one gain K<sub>p</sub> for every step size; the real (nonlinear) gain shrinks for large insulin increases and grows for cuts. Diamond = current ΔU.</p></div></div>
+    <div class="grid two" style="margin-top:14px"><div id="th-half"></div><div id="th-fits"></div></div>
+    <div class="panel chart-panel" style="margin-top:14px"><p class="chart-title">P5 · Step responses to ΔU (same slider as P4)</p><div id="p5" class="chart tall"></div>
+      <p class="chart-cap">Nonlinear = RK4 simulation of the full model (open loop, no meal); linear = 3rd-order transfer function; the fits were made offline at ΔU = +1 mU/min by the Python reference, so they drift from the nonlinear curve for large steps.</p></div>
+  </section>
 
-  <div class="section"><h2>5 · Feedforward: why the ideal controller is improper, and the static bolus</h2></div>
-  <div class="grid two"><div id="th-ff"></div><div><div id="th-bolus"></div><div class="panel" style="margin-top:10px"><div id="th-ff-ctl"></div><p class="chart-title">Bolus size vs meal-estimate error</p><div id="p-bolus" class="chart short"></div>
-    <p class="chart-cap">Linear in the estimate error: a 40 % overestimate gives 40 % more bolus insulin than the ideal static feedforward. Diamond = current setting.</p></div></div></div>
-
-  <div class="grid two" style="margin-top:14px">
-    <div class="callout"><h4>Why real systems are harder</h4><ul class="clean">
-      <li>The meal appears in the blood instantly here (D(t) jumps at t<sub>meal</sub>); real absorption has its own delay.</li>
-      <li>Insulin absorption is lumped into one compartment, I.</li>
-      <li>No counter-regulation (no glucagon): once insulin is in, the only “brake” is U = 0, and the model is qualitative below about 40 mg/dL.</li></ul></div>
-    <div class="callout"><h4>Glucagon and split-range control (concept only)</h4>
-      <p>Because the pump cannot remove insulin, a second manipulated variable that raises glucose would let the loop act in both
-      directions: one controller output split into two ranges, insulin above a split point and the counter-acting hormone below it.
-      This is the classic split-range idea from the course. It is not modelled here, and no numbers are given.</p></div>
-  </div>`;
+  <section class="chapter">${chapHead(c5.id, c5.num, c5.title, 'The ideal feedforward controller would need to predict the future, so it is improper; a static bolus sized from the meal is the realizable version.')}
+    <div class="grid two"><div id="th-ff"></div><div><div id="th-bolus"></div><div class="panel chart-panel" style="margin-top:10px"><div id="th-ff-ctl" class="inline-ctl"></div><p class="chart-title">Bolus size vs meal-estimate error</p><div id="p-bolus" class="chart short"></div>
+      <p class="chart-cap">Linear in the estimate error: a 40 % overestimate gives 40 % more bolus insulin than the ideal static feedforward. Diamond = current setting.</p></div></div></div>
+    <div class="grid two" style="margin-top:14px">
+      <div class="callout"><h4>Why real systems are harder</h4><ul class="clean">
+        <li>The meal appears in the blood instantly here (D(t) jumps at t<sub>meal</sub>); real absorption has its own delay.</li>
+        <li>Insulin absorption is lumped into one compartment, I.</li>
+        <li>No counter-regulation (no glucagon): once insulin is in, the only “brake” is U = 0, and the model is qualitative below about 40 mg/dL.</li></ul></div>
+      <div class="callout"><h4>Glucagon and split-range control (concept only)</h4>
+        <p>Because the pump cannot remove insulin, a second manipulated variable that raises glucose would let the loop act in both
+        directions: one controller output split into two ranges, insulin above a split point and the counter-acting hormone below it.
+        This is the classic split-range idea from the course. It is not modelled here, and no numbers are given.</p></div>
+    </div>
+  </section>
+  </div></div>`;
+  chapterNav(document.getElementById('theory-nav'), THEORY_CHAPTERS, 'Theory');
   buildControls(document.getElementById('th-gain-ctl'), THEORY_SPEC_GAIN, 'th');
   buildControls(document.getElementById('th-ff-ctl'), THEORY_SPEC_FF, 'thff');
   theoryBuilt = true;
@@ -722,73 +762,220 @@ function renderTheory() {
 
 // ------------------------------------------------------------------ CONTROL DESIGN
 let designBuilt = false;
+const DESIGN_CHAPTERS = [
+  { id: 'ds-c1', num: '01', title: 'Controller configuration' },
+  { id: 'ds-c2', num: '02', title: 'IMC tuning methodology' },
+  { id: 'ds-c3', num: '03', title: 'Discrete PID implementation' },
+  { id: 'ds-c4', num: '04', title: 'Anti-windup' },
+  { id: 'ds-c5', num: '05', title: 'Block diagram' },
+  { id: 'ds-c6', num: '06', title: 'Stability margins' },
+  { id: 'ds-c7', num: '07', title: 'Bode and Nyquist analysis' },
+  { id: 'ds-c8', num: '08', title: 'PID versus MPC' },
+];
 function buildDesign() {
   const root = document.getElementById('design-cards');
-  root.innerHTML = `
-  <div class="grid two">
-    <div class="panel" id="design-ctl"><div class="row" style="margin-top:6px"><button class="btn" id="tauc-guideline">Set τc = θ_total (SIMC guideline)</button></div>
-      <p class="chart-cap">Guideline: Skogestad SIMC suggests τc = θ; Rivera et al. suggest τc &gt; 0.8θ [TO VERIFY in Seborg Ch. 12]. The tests and presets use τc = 20 min.</p></div>
-    <div id="ds-step1"></div>
-  </div>
-  <div class="grid two" style="margin-top:14px"><div id="ds-step2"></div><div id="ds-step3"></div></div>
-  <div class="grid two" style="margin-top:14px"><div id="ds-pid"></div><div id="ds-aw"></div></div>
+  const ch = DESIGN_CHAPTERS;
+  root.innerHTML = `<div class="doc-layout"><aside class="chapnav" id="design-nav" aria-label="Control design chapters"></aside><div class="doc-body">
+  <section class="chapter">${chapHead(ch[0].id, ch[0].num, ch[0].title, 'Every input here is shared with the Simulator: change τ<sub>c</sub> or switch to manual gains and both tabs follow.')}
+    <div class="panel config-bar" id="design-ctl">
+      <div class="config-head"><h3>Tuning inputs</h3><p>shared with the Simulator</p></div>
+      <div class="config-grid" id="design-ctl-grid"></div>
+      <div class="row config-foot"><button class="btn" id="tauc-guideline" type="button">Set τc = θ_total (SIMC guideline)</button>
+        <p class="chart-cap">Guideline: Skogestad SIMC suggests τc = θ; Rivera et al. suggest τc &gt; 0.8θ [TO VERIFY in Seborg Ch. 12]. The tests and presets use τc = 20 min.</p></div>
+    </div>
+  </section>
 
-  <div class="section"><h2>Closed-loop block diagram (live numbers)</h2></div>
-  <div class="panel"><div class="diagram-scroll" id="block-diagram"></div></div>
+  <section class="chapter">${chapHead(ch[1].id, ch[1].num, ch[1].title, 'Internal Model Control in three steps: reduce the model, add up the dead time the loop must live with, then read the PID settings from the IMC table.')}
+    <ol class="stepper">
+      <li class="step"><span class="step-n" aria-hidden="true">1</span><div id="ds-step1"></div></li>
+      <li class="step"><span class="step-n" aria-hidden="true">2</span><div id="ds-step2"></div></li>
+      <li class="step"><span class="step-n" aria-hidden="true">3</span><div id="ds-step3"></div></li>
+    </ol>
+  </section>
 
-  <div class="section"><h2>Frequency response and stability margins</h2></div>
-  <div class="grid three" id="ds-margins"></div>
-  <div class="grid two" style="margin-top:14px">
-    <div class="panel"><p class="chart-title">P6 · Bode plot of L(jω)</p><div id="p6" class="chart tall"></div>
-      <p class="chart-cap">Top: |L|; bottom: phase. Solid = with the sensor delay; dashed = delay-free. Markers at ω<sub>c</sub>.</p></div>
-    <div class="panel"><p class="chart-title">P7 · Nyquist plot of L(jω)</p><div id="p7" class="chart tall"></div>
-      <p class="chart-cap">Stable if the curve does not encircle −1 (open loop is stable). The unit circle marks where |L| = 1.</p></div>
-  </div>
-  <div class="callout"><h4>Sampled-data note</h4><p id="ds-sampled"></p></div>
+  <section class="chapter">${chapHead(ch[2].id, ch[2].num, ch[2].title, 'What the simulator actually runs: a positional PID on the sampled sensor reading, with a filtered derivative on the measurement.')}
+    <div id="ds-pid"></div>
+  </section>
 
-  <div class="section"><h2>PID vs MPC (precomputed)</h2></div>
-  <div class="panel"><div class="row" style="justify-content:space-between"><p class="chart-title" style="margin:0">P9 · PID vs MPC, Ex. 23.6(e) setup</p>
-    <select id="mpc-case" aria-label="Meal announcement"><option value="unannounced">Unannounced meal</option><option value="announced">Announced meal</option></select></div>
-    <div id="p9" class="chart tall"></div>
-    <p class="chart-cap"><b>Computed offline by the Python reference; MPC is not implemented in this website.</b> <span id="mpc-note"></span></p></div>`;
-  buildControls(document.getElementById('design-ctl'), DESIGN_SPEC, 'ds');
-  document.getElementById('design-ctl').append(document.querySelector('#design-ctl .row'), document.querySelector('#design-ctl .chart-cap'));
+  <section class="chapter">${chapHead(ch[3].id, ch[3].num, ch[3].title, 'The pump saturates at 0 and 115 mU/min. Without protection the integral keeps growing while the pump is pinned.')}
+    <div id="ds-aw"></div>
+  </section>
+
+  <section class="chapter">${chapHead(ch[4].id, ch[4].num, ch[4].title, 'The whole loop with live numbers. Select a block to see its transfer function and current values.')}
+    <div class="diagram-frame">
+      <div class="diagram-stage"><div class="diagram-scroll" id="block-diagram"></div>
+        <ul class="diagram-legend" aria-label="Signal paths"><li class="lg-fb">feedback path</li><li class="lg-dist">meal disturbance</li><li class="lg-ff">feedforward</li></ul></div>
+      <aside class="diagram-info card" id="block-info" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <section class="chapter">${chapHead(ch[5].id, ch[5].num, ch[5].title, 'How far the loop is from instability, from the frequency response of the full third-order model with the actual sensor delay.')}
+    <div class="margin-strip" id="ds-margin-strip"></div>
+    <div class="grid three" id="ds-margins"></div>
+  </section>
+
+  <section class="chapter">${chapHead(ch[6].id, ch[6].num, ch[6].title, 'The same loop transfer function L(jω), drawn two ways.')}
+    <div class="grid two">
+      <div class="panel"><p class="chart-title">P6 · Bode plot of L(jω)</p><div id="p6" class="chart tall"></div>
+        <p class="chart-cap">Top: |L|; bottom: phase. Solid = with the sensor delay; dashed = delay-free. Markers at ω<sub>c</sub>.</p></div>
+      <div class="panel"><p class="chart-title">P7 · Nyquist plot of L(jω)</p><div id="p7" class="chart tall"></div>
+        <p class="chart-cap">Stable if the curve does not encircle −1 (open loop is stable). The unit circle marks where |L| = 1.</p></div>
+    </div>
+    <div class="callout"><h4>Sampled-data note</h4><p id="ds-sampled"></p></div>
+  </section>
+
+  <section class="chapter">${chapHead(ch[7].id, ch[7].num, ch[7].title, 'Model predictive control, computed offline by the Python reference for the Ex. 23.6(e) setup, against the same PID.')}
+    <div class="panel"><div class="row mpc-head"><p class="chart-title" style="margin:0">P9 · PID vs MPC, Ex. 23.6(e) setup</p>
+      <label class="ctl mpc-ctl"><span>Meal</span><select id="mpc-case" aria-label="Meal announcement"><option value="unannounced">Unannounced meal</option><option value="announced">Announced meal</option></select></label></div>
+      <div id="p9" class="chart tall"></div>
+      <p class="chart-cap"><b>Computed offline by the Python reference; MPC is not implemented in this website.</b> <span id="mpc-note"></span></p></div>
+  </section>
+  </div></div>`;
+  buildControls(document.getElementById('design-ctl-grid'), DESIGN_SPEC, 'ds');
+  chapterNav(document.getElementById('design-nav'), DESIGN_CHAPTERS, 'Control design');
   document.getElementById('tauc-guideline').addEventListener('click', () => {
     const th = tuningOf(state).theta_total;
     setState({ tau_c: Math.min(100, Math.max(2, Math.round(th))), tuning_mode: 'imc' }, true);
   });
   document.getElementById('mpc-case').addEventListener('change', (e) => setState({ mpc_case: e.target.value }));
   document.getElementById('mpc-note').textContent = DATA.mpcComparison.note;
+  // block diagram: select a block (click, tap, Enter/Space); wide or vertical drawing by width
+  const bd = document.getElementById('block-diagram');
+  const pick = (g) => { if (g) { diagSel = g.dataset.k; paintDiagram(); } };
+  bd.addEventListener('click', (e) => pick(e.target.closest('.blk')));
+  bd.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.blk')) { e.preventDefault(); pick(e.target.closest('.blk')); } });
+  NARROW_DIAG.addEventListener('change', () => { if (activeTab === 'design') paintDiagram(); else dirty.design = true; });
   designBuilt = true;
   syncControls();
 }
 
-function diagramSVG(e, s) {
-  const lbl = (x, y, t, cls = '') => `<text x="${x}" y="${y}" text-anchor="middle" class="${cls}">${esc(t)}</text>`;
-  const box = (x, y, w, h, t1, t2) => `<rect class="box" x="${x}" y="${y}" width="${w}" height="${h}" rx="6"/>${lbl(x + w / 2, y + h / 2 - 3, t1)}${t2 ? lbl(x + w / 2, y + h / 2 + 12, t2, 'small') : ''}`;
-  const sum = (x, y) => `<circle class="sum" cx="${x}" cy="${y}" r="11"/>${lbl(x, y + 4, 'Σ')}`;
-  const arr = (d, cls = '') => `<path class="wire ${cls}" d="${d}" marker-end="url(#ah)"/>`;
-  const ctrl = s.controller === 'pid' ? `${s.mode}: Kc=${fmt(e.Kc, 3)}` : 'open loop';
-  const ctrl2 = s.controller === 'pid' ? (s.mode === 'P' ? 'no integral' : `τI=${fmt(e.tauI, 1)}${s.mode === 'PID' ? `, τD=${fmt(e.tauD, 1)}` : ''} min`) : 'U = U_b';
-  const ffOn = s.ff_enabled;
-  const umax = s.saturation ? '[0, 115]' : 'unbounded';
-  return `<svg class="diagram" viewBox="0 0 860 270" role="img" aria-label="Closed-loop block diagram: set point, controller, pump saturation, process, disturbance, feedforward and sensor">
-  <defs><marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor" style="color:var(--text-2)"/></marker></defs>
-  ${lbl(30, 145, 'G_sp')}${lbl(30, 160, `${fmt(s.sp_on ? s.sp_val : 81, 0)} mg/dL`, 'small')}
-  ${arr('M55,150 L94,150')}${sum(106, 150)}${lbl(96, 175, '−', 'small')}
-  ${arr('M117,150 L150,150')}${box(150, 125, 150, 50, ctrl, ctrl2)}
-  ${arr('M300,150 L330,150')}${box(330, 125, 100, 50, 'Pump limits', umax + ' mU/min')}
-  ${arr('M430,150 L476,150')}${sum(488, 150)}
-  ${arr('M499,150 L530,150')}${box(530, 120, 140, 60, 'Gp(s)', `Kp=${fmt(LM.Kp, 2)}, 3 lags`)}
-  ${arr('M670,150 L736,150')}${sum(748, 150)}
-  ${arr('M759,150 L840,150')}${lbl(830, 140, 'G')}
-  ${box(560, 20, 100, 44, 'D(t) meal', `A=9, k=0.05`)}
-  ${arr('M660,42 L715,42 L715,75', 'dist')}${box(680, 75, 70, 38, 'Gd(s)', `Kd=${fmt(LM.Kd, 1)}`)}${arr('M748,113 L748,138', 'dist')}
-  ${ffOn ? `${arr('M560,42 L420,42 L420,62', 'ff')}${box(370, 62, 100, 40, 'Gff = Kf', `${fmt(LM.Kf, 2)}, t_pre=${fmt(s.t_pre, 0)}`)}${arr('M470,82 L488,82 L488,138', 'ff')}`
-    : lbl(450, 50, 'feedforward off', 'small')}
-  ${arr('M800,150 L800,235 L520,235')}${box(380, 212, 140, 46, 'Sensor', `e^(−${fmt(s.sensor_delay, 1)}s), Ts=5${s.sensor_lag > 0 ? `, τs=${fmt(s.sensor_lag, 1)}` : ''}`)}
-  ${arr('M380,235 L106,235 L106,162')}${lbl(240, 228, 'G_m (sampled every 5 min)', 'small')}
+// ------------------------------------------------------------------ block diagram (wide and vertical), interactive
+const NARROW_DIAG = window.matchMedia('(max-width: 699px)');
+let diagSel = 'ctrl';
+let diagInfo = {};
+// one block: a focusable group; w/h in SVG units; t1 title, t2 live numbers
+function dBlock(k, x, y, w, h, t1, t2, cls = '') {
+  return `<g class="blk ${cls}" data-k="${k}" tabindex="0" role="button" aria-label="${esc(t1)}${t2 ? `: ${esc(t2)}` : ''}">
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/>
+    <text class="bt" x="${x + w / 2}" y="${y + h / 2 - (t2 ? 3 : -4)}" text-anchor="middle">${esc(t1)}</text>
+    ${t2 ? `<text class="bs" x="${x + w / 2}" y="${y + h / 2 + 13}" text-anchor="middle">${esc(t2)}</text>` : ''}</g>`;
+}
+const dSum = (x, y, signs = '') => `<g class="sumj"><circle cx="${x}" cy="${y}" r="12"/><text x="${x}" y="${y + 4.5}" text-anchor="middle">Σ</text>${signs}</g>`;
+// a wire between blocks; the from/to keys light it up with the selected block
+const dWire = (d, cls, from, to) => `<path class="wire ${cls}" data-from="${from}" data-to="${to}" d="${d}" marker-end="url(#ah-${cls})"/>`;
+const dSig = (x, y, t, anchor = 'middle') => `<text class="sig" x="${x}" y="${y}" text-anchor="${anchor}">${t}</text>`;
+function diagramLabels(e, s) {
+  const pid = s.controller === 'pid';
+  return {
+    sp: `${fmt(s.sp_on ? s.sp_val : P.G_basal, 0)} mg/dL`,
+    ctrl1: pid ? `Controller (${s.mode})` : 'Controller (off)',
+    ctrl2: pid ? `Kc = ${fmt(e.Kc, 3)}` : 'U = U_b',
+    ctrl3: pid ? (s.mode === 'P' ? 'no integral' : `τI = ${fmt(e.tauI, 1)}${s.mode === 'PID' ? `, τD = ${fmt(e.tauD, 1)}` : ''} min`) : '',
+    pump: s.saturation ? '0–115 mU/min' : 'unbounded',
+    gp: `Kp = ${fmt(LM.Kp, 2)}, 3 lags`,
+    gd: `Kd = ${fmt(LM.Kd, 1)}`,
+    ff: `Kf = ${fmt(LM.Kf, 2)}`,
+    sensor: `θs = ${fmt(s.sensor_delay, 1)} min, Ts = 5${s.sensor_lag > 0 ? `, τs = ${fmt(s.sensor_lag, 1)}` : ''}`,
+  };
+}
+const ARROWS = `<defs>${['fb', 'dist', 'ff'].map((c) => `<marker id="ah-${c}" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse"><path class="ah ${c}" d="M0,0 L9,4.5 L0,9 z"/></marker>`).join('')}</defs>`;
+function diagramWide(e, s) {
+  const L = diagramLabels(e, s);
+  const ff = s.ff_enabled && s.meal_plan !== 'none';
+  return `<svg class="diagram wide" viewBox="0 0 940 340" role="group" aria-label="Closed-loop block diagram (select a block for details)">${ARROWS}
+  ${dBlock('sp', 14, 150, 100, 52, 'Set point r', L.sp)}
+  ${dWire('M114,176 L148,176', 'fb', 'sp', 'ctrl')}${dSum(162, 176, '<text class="sgn" x="150" y="200">−</text><text class="sgn" x="140" y="168">+</text>')}
+  ${dWire('M174,176 L210,176', 'fb', 'sensor', 'ctrl')}${dSig(192, 168, 'e')}
+  <g class="blk-wrap">${dBlock('ctrl', 210, 140, 172, 72, L.ctrl1, L.ctrl2, 'tall3')}<text class="bs" x="296" y="203" text-anchor="middle">${esc(L.ctrl3)}</text></g>
+  ${dWire('M382,176 L420,176', 'fb', 'ctrl', 'pump')}${dSig(401, 168, 'u')}
+  ${dBlock('pump', 420, 150, 124, 52, 'Pump limits', L.pump)}
+  ${dWire('M544,176 L580,176', 'fb', 'pump', 'gp')}${dSig(562, 168, 'U')}${dSum(592, 176)}
+  ${dWire('M604,176 L640,176', 'fb', 'pump', 'gp')}
+  ${dBlock('gp', 640, 144, 150, 64, 'Process Gp(s)', L.gp)}
+  ${dWire('M790,176 L834,176', 'fb', 'gp', 'out')}${dSum(846, 176, '<text class="sgn" x="858" y="164">+</text>')}
+  ${dWire('M858,176 L926,176', 'fb', 'gp', 'out')}${dSig(904, 168, 'G')}
+  ${dBlock('meal', 700, 14, 120, 52, 'Meal D(t)', 'A = 9, k = 0.05')}
+  ${dWire('M820,40 L846,40 L846,84', 'dist', 'meal', 'gd')}${dSig(856, 62, 'D', 'start')}
+  ${dBlock('gd', 800, 84, 92, 46, 'Gd(s)', L.gd)}
+  ${dWire('M846,130 L846,162', 'dist', 'gd', 'out')}
+  ${ff ? `${dWire('M700,40 L592,40 L592,76', 'ff', 'meal', 'ff')}${dBlock('ff', 540, 76, 104, 46, 'Feedforward', L.ff)}${dWire('M592,122 L592,162', 'ff', 'ff', 'gp')}`
+    : `<text class="note" x="592" y="58" text-anchor="middle">feedforward off</text>`}
+  ${dWire('M890,176 L890,290 L606,290', 'fb', 'out', 'sensor')}
+  ${dBlock('sensor', 430, 264, 176, 52, 'Sensor (CGM)', L.sensor)}
+  ${dWire('M430,290 L162,290 L162,190', 'fb', 'sensor', 'ctrl')}${dSig(296, 282, 'G<tspan class="sub" dy="3">m</tspan><tspan dy="-3"> sampled every 5 min</tspan>')}
   </svg>`;
+}
+function diagramTall(e, s) {
+  const L = diagramLabels(e, s);
+  const ff = s.ff_enabled && s.meal_plan !== 'none';
+  const X = 150; // main column centre
+  return `<svg class="diagram tall-d" viewBox="0 0 360 560" role="group" aria-label="Closed-loop block diagram, drawn top to bottom (select a block for details)">${ARROWS}
+  ${dBlock('sp', 60, 8, 180, 46, 'Set point r', L.sp)}
+  ${dWire(`M${X},54 L${X},72`, 'fb', 'sp', 'ctrl')}${dSum(X, 86, `<text class="sgn" x="${X - 22}" y="80">+</text><text class="sgn" x="${X - 24}" y="108">−</text>`)}
+  ${dWire(`M${X},98 L${X},116`, 'fb', 'sensor', 'ctrl')}${dSig(X + 10, 111, 'e', 'start')}
+  <g class="blk-wrap">${dBlock('ctrl', 60, 116, 180, 68, L.ctrl1, L.ctrl2, 'tall3')}<text class="bs" x="${X}" y="175" text-anchor="middle">${esc(L.ctrl3)}</text></g>
+  ${dWire(`M${X},184 L${X},204`, 'fb', 'ctrl', 'pump')}${dSig(X + 10, 199, 'u', 'start')}
+  ${dBlock('pump', 60, 204, 180, 46, 'Pump limits', L.pump)}
+  ${dWire(`M${X},250 L${X},262`, 'fb', 'pump', 'gp')}${dSum(X, 276)}
+  ${dWire(`M${X},288 L${X},304`, 'fb', 'pump', 'gp')}${dSig(X + 10, 300, 'U', 'start')}
+  ${dBlock('gp', 60, 304, 180, 56, 'Process Gp(s)', L.gp)}
+  ${dWire(`M${X},360 L${X},392`, 'fb', 'gp', 'out')}${dSum(X, 406, `<text class="sgn" x="${X + 16}" y="398">+</text>`)}
+  ${dWire(`M${X},418 L${X},452`, 'fb', 'gp', 'out')}${dSig(X + 10, 440, 'G', 'start')}
+  ${dBlock('meal', 252, 318, 100, 46, 'Meal D(t)', 'A=9, k=0.05')}
+  ${dWire('M302,364 L302,384', 'dist', 'meal', 'gd')}
+  ${dBlock('gd', 252, 384, 100, 44, 'Gd(s)', L.gd)}
+  ${dWire('M252,406 L164,406', 'dist', 'gd', 'out')}
+  ${ff ? `${dWire('M302,318 L302,298', 'ff', 'meal', 'ff')}${dBlock('ff', 252, 252, 100, 46, 'Feedforward', L.ff)}${dWire('M252,276 L164,276', 'ff', 'ff', 'gp')}`
+    : `<text class="note" x="302" y="282" text-anchor="middle">feedforward off</text>`}
+  ${dBlock('sensor', 60, 452, 180, 52, 'Sensor (CGM)', L.sensor)}
+  ${dWire(`M60,478 L22,478 L22,86 L136,86`, 'fb', 'sensor', 'ctrl')}${dSig(30, 530, 'G<tspan class="sub" dy="3">m</tspan><tspan dy="-3">: sampled every 5 min, back to Σ</tspan>', 'start')}
+  </svg>`;
+}
+// what the side panel shows for each block (live values)
+function blockInfo(e, s) {
+  const pid = s.controller === 'pid';
+  const lag = s.sensor_lag > 0 ? `\\dfrac{1}{${tf(s.sensor_lag, 1)}s+1}\\,` : '';
+  return {
+    sp: { t: 'Set point', r: 'Reference', tex: [`r=${tf(P.G_basal, 0)}\\ \\mathrm{mg/dL}${s.sp_on ? `\\;\\to\\;${tf(s.sp_val, 0)}\\ \\text{at}\\ t=${tf(s.sp_t, 0)}\\ \\mathrm{min}` : ''}`],
+      p: 'The glucose the controller aims for: the basal 81 mg/dL unless a set-point step is switched on in the Simulator.' },
+    ctrl: { t: 'Controller Gc(s)', r: pid ? `${s.mode} controller, every T_s = 5 min` : 'Off (open loop)',
+      tex: pid ? [`G_c(s)=K_c\\Big[1${s.mode !== 'P' ? '+\\tfrac{1}{\\tau_I s}' : ''}${s.mode === 'PID' ? '+\\tfrac{\\tau_D s}{\\tfrac{\\tau_D}{N}s+1}' : ''}\\Big]`,
+        `K_c=${tf(e.Kc, 4)}\\ \\tfrac{\\mathrm{mU/min}}{\\mathrm{mg/dL}}${s.mode !== 'P' ? `,\\;\\tau_I=${tf(e.tauI, 2)}` : ''}${s.mode === 'PID' ? `,\\;\\tau_D=${tf(e.tauD, 2)},\\;N=${tf(e.N, 0)}` : ''}`] : ['U=U_b'],
+      p: pid ? `Gains from ${s.tuning_mode === 'manual' ? 'manual entry' : `IMC tuning with τc = ${fmt(s.tau_c, 0)} min`}. K_c is negative: more glucose calls for more insulin (reverse acting).` : 'The pump just delivers basal insulin; nothing responds to the meal.' },
+    pump: { t: 'Pump limits', r: 'Final control element',
+      tex: [s.saturation ? `0\\le U\\le ${tf(P.U_max, 0)}\\ \\mathrm{mU/min}` : 'U\\ \\text{unbounded (limits off)}', `U_b=${tf(LM.U_basal, 2)}\\ \\mathrm{mU/min}`],
+      p: `The pump can add up to ${fmt(P.U_max - LM.U_basal, 1)} mU/min above basal but cut only ${fmt(LM.U_basal, 1)}: the loop's authority is lopsided.` },
+    gp: { t: 'Process Gp(s)', r: 'Insulin → glucose (linearized)',
+      tex: [`G_p(s)=\\frac{K_p}{(\\tau_G s+1)(\\tau_X s+1)(\\tau_I s+1)}`, `K_p=${tf(LM.Kp, 3)}\\ \\tfrac{\\mathrm{mg/dL}}{\\mathrm{mU/min}}`, `\\tau_G=${tf(LM.tauG, 1)},\\;\\tau_X=${tf(LM.tauX, 1)},\\;\\tau_I=${tf(LM.tauI, 1)}\\ \\mathrm{min}`],
+      p: 'Three lags in series: insulin must reach the plasma, then the remote compartment, before glucose moves.' },
+    meal: { t: 'Meal disturbance D(t)', r: 'Disturbance',
+      tex: [`D(t)=A\\,m\\,e^{-k(t-t_{meal})},\\quad A=${tf(P.meal_A, 0)},\\;k=${tf(P.meal_k, 2)},\\;m=${tf(s.meal_mult, 1)}`],
+      p: s.meal_plan === 'none' ? 'No meal in the current settings.' : 'Glucose appearing from the meal, in mg/dL per minute.' },
+    gd: { t: 'Disturbance path Gd(s)', r: 'Meal → glucose',
+      tex: [`G_d(s)=\\frac{K_d}{\\tau_G s+1},\\quad K_d=${tf(LM.Kd, 2)}\\ \\mathrm{min}`],
+      p: 'One lag only: the meal reaches glucose faster than insulin can, which is why feedback alone reacts late.' },
+    ff: { t: 'Feedforward', r: s.ff_enabled ? `static bolus, t_pre = ${fmt(s.t_pre, 0)} min` : 'off',
+      tex: [`K_f=-\\frac{K_d}{K_p}=${tf(LM.Kf, 3)}`, `B=f\\,K_f\\,(1+\\varepsilon)\\,\\frac{A\\,m}{k}=${tf(M.bolusSize({ f_bolus: s.f_bolus, est_error: s.est_error, mult: s.meal_mult }), 1)}\\ \\mathrm{mU}`],
+      p: 'Acts on the meal itself, before glucose rises. Only the steady-state part of the ideal (improper) feedforward is realizable.' },
+    sensor: { t: 'Sensor Gm(s)', r: 'Measurement',
+      tex: [`G_m(s)=${lag}e^{-${tf(s.sensor_delay, 1)}s},\\quad T_s=5\\ \\mathrm{min}`],
+      p: `The controller sees glucose ${fmt(s.sensor_delay, 1)} min late and only every 5 min; this delay is what limits how hard the loop can be tuned.` },
+  };
+}
+let lastDiag = null;
+function paintDiagram() {
+  if (!lastDiag) return;
+  const { e, s } = lastDiag;
+  const bd = document.getElementById('block-diagram');
+  bd.innerHTML = NARROW_DIAG.matches ? diagramTall(e, s) : diagramWide(e, s);
+  diagInfo = blockInfo(e, s);
+  if (!bd.querySelector(`.blk[data-k="${diagSel}"]`)) diagSel = 'ctrl';
+  bd.querySelectorAll('.blk').forEach((g) => { const on = g.dataset.k === diagSel; g.classList.toggle('on', on); g.setAttribute('aria-pressed', String(on)); });
+  bd.querySelectorAll('.wire').forEach((w) => w.classList.toggle('on', w.dataset.from === diagSel || w.dataset.to === diagSel));
+  const b = diagInfo[diagSel];
+  const el = document.getElementById('block-info');
+  el.innerHTML = `<div class="di-text"><p class="role">${esc(b.r)}</p><h4>${esc(b.t)}</h4><p class="meaning">${esc(b.p)}</p></div><div class="di-eqs">${b.tex.map((t) => T(t)).join('')}</div>`;
+  renderTex(el);
 }
 
 function renderDesign() {
@@ -843,7 +1030,8 @@ function renderDesign() {
     meaning: 'When the pump is pinned at 0 or 115 mU/min, an unchecked integral keeps growing and later causes a deep undershoot; both methods stop that.',
   }));
 
-  document.getElementById('block-diagram').innerHTML = diagramSVG(e, state);
+  lastDiag = { e, s: state };
+  paintDiagram();
 
   // margins
   const theta = state.sensor_delay;
@@ -852,6 +1040,19 @@ function renderDesign() {
   const m0 = ok ? M.margins({ Kc: e.Kc, tauI: e.tauI, tauD: e.tauD, N: e.N, theta: 0 }) : null;
   const mcard = (title, tex, units, meaning) => card({ title, tex, units, meaning });
   const marginsEl = document.getElementById('ds-margins');
+  // metric strip: the four numbers at a glance; ranges are textbook rules of thumb (PM 30-45 deg, GM 1.7-4) [TO VERIFY in Seborg Ch. 14]
+  const strip = document.getElementById('ds-margin-strip');
+  if (!ok) strip.innerHTML = '';
+  else {
+    const pmFlag = !fin(mg.PM_deg) ? '' : mg.PM_deg < 30 ? 'bad' : 'good';
+    const gmFlag = !fin(mg.GM) ? '' : mg.GM < 1.7 ? 'bad' : 'good';
+    strip.innerHTML = [
+      metricHTML(fin(mg.PM_deg) ? `${fmt(mg.PM_deg, 1)}°` : '—', '', `phase margin, θs = ${fmt(theta, 1)} min`, pmFlag),
+      metricHTML(fmt(mg.GM, 2), '×', 'gain margin', gmFlag),
+      metricHTML(fmt(mg.wc, 4), 'rad/min', 'crossover frequency ω_c'),
+      metricHTML(fmt(mg.total_tolerable_delay, 1), 'min', 'total delay the loop tolerates'),
+    ].join('') + '<p class="strip-note">Green/red: rule-of-thumb ranges PM ≥ 30° and GM ≥ 1.7 [TO VERIFY in Seborg Ch. 14]. Each number is derived in the cards below.</p>';
+  }
   if (!ok) {
     marginsEl.innerHTML = '<div class="card"><h3>Open loop selected</h3><p>Stability margins describe the feedback loop; switch the Simulator to closed loop (PID).</p></div>';
   } else {
@@ -1052,6 +1253,7 @@ function buildOverview() {
 }
 
 // interactive loop diagram (numbers from DATA / the engine)
+const NARROW_LOOP = window.matchMedia('(max-width: 559px)');
 function buildLoop() {
   const d = M.DEFAULT_INPUTS;
   const nodes = [
@@ -1069,11 +1271,26 @@ function buildLoop() {
   const meal = { k: 'meal', t: 'Meal', s: 'disturbance', x: 560, y: 46, role: 'Disturbance',
     p: `D(t) = A·e^(−kt) with A = ${fmt(P.meal_A, 0)} mg/dL/min and k = ${fmt(P.meal_k, 2)} 1/min: glucose appears in the blood faster than insulin can act.` };
   const all = [...nodes, meal];
+  // phones: a vertical cycle (meal → glucose → sensor → controller → pump → insulin → back to glucose) with readable text
+  const narrow = NARROW_LOOP.matches;
+  if (narrow) {
+    ['meal', 'glucose', 'sensor', 'controller', 'pump', 'insulin'].forEach((k, i) => { const n = all.find((x) => x.k === k); n.x = 150; n.y = 40 + i * 92; });
+  }
   const box = (n) => `<g class="node" data-k="${n.k}" tabindex="0" role="button" aria-label="${n.t}: ${n.role}">
     <rect x="${n.x - 62}" y="${n.y - 26}" width="124" height="52" rx="14"/>
     <text class="nt" x="${n.x}" y="${n.y - 2}" text-anchor="middle">${n.t}</text><text class="ns" x="${n.x}" y="${n.y + 15}" text-anchor="middle">${n.s}</text></g>`;
   const svg = document.getElementById('loop-svg');
-  svg.innerHTML = `<ellipse class="ring" cx="320" cy="180" rx="230" ry="120"/><ellipse class="flow" cx="320" cy="180" rx="230" ry="120" transform="rotate(180 320 180)"/>
+  svg.setAttribute('viewBox', narrow ? '0 0 330 540' : '0 0 640 360');
+  svg.classList.toggle('vertical', narrow);
+  if (narrow) {
+    const down = (y1, y2, cls = '') => `<path class="vlink ${cls}" d="M150,${y1} L150,${y2}" marker-end="url(#arrv${cls ? '-w' : ''})"/>`;
+    svg.innerHTML = `<defs><marker id="arrv" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker>
+      <marker id="arrv-w" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--warn)"/></marker></defs>
+      ${down(66, 104, 'w')}${[1, 2, 3, 4].map((i) => down(40 + i * 92 + 26, 40 + (i + 1) * 92 - 28)).join('')}
+      <path class="vreturn" d="M212,500 L292,500 L292,132 L216,132" marker-end="url(#arrv)"/>
+      <text class="center" x="304" y="320" text-anchor="middle" transform="rotate(90 304 320)">feedback: insulin lowers glucose</text>
+      ${all.map(box).join('')}`;
+  } else svg.innerHTML = `<ellipse class="ring" cx="320" cy="180" rx="230" ry="120"/><ellipse class="flow" cx="320" cy="180" rx="230" ry="120" transform="rotate(180 320 180)"/>
     <path d="M560,72 L556,140" stroke="var(--warn)" stroke-width="2" fill="none" marker-end="url(#arrw)"/>
     <defs><marker id="arrw" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--warn)"/></marker></defs>
     <text class="center" x="320" y="176" text-anchor="middle">closed loop</text><text class="center" x="320" y="196" text-anchor="middle">feedback</text>
@@ -1081,6 +1298,7 @@ function buildLoop() {
   const info = document.getElementById('loop-info');
   const show = (k) => {
     const n = all.find((x) => x.k === k);
+    OV.loopSel = k;
     svg.querySelectorAll('.node').forEach((g) => g.classList.toggle('active', g.dataset.k === k));
     info.innerHTML = `<p class="role">${n.role}</p><h4>${n.t}</h4><p>${esc(n.p)}</p>`;
   };
@@ -1088,7 +1306,8 @@ function buildLoop() {
     g.addEventListener('click', () => show(g.dataset.k));
     g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(g.dataset.k); } });
   });
-  show('glucose');
+  show(OV.loopSel || 'glucose');
+  if (!OV.loopWatch) { OV.loopWatch = true; NARROW_LOOP.addEventListener('change', () => buildLoop()); }
 }
 
 // 3D pancreas: hero viewer (driven by the default run's U(t)) + full viewer with tools and hotspots

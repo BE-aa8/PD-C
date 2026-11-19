@@ -394,3 +394,23 @@ On a software renderer, live 3D stays slow by nature; the difference is that it 
 **Results (local):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light`, `/gemini/` (device light and dark); content test 53/53 in both themes; extended check clean; screenshots at 1280 and 375 px reviewed.
 
 **Next step:** Andrew checks the Overview on his laptop. If the still image and "Live 3D is off" appear, hardware acceleration is off in that browser (Chrome: Settings → System → "Use graphics acceleration when available"; `chrome://gpu` shows the details); turning it on brings back the rotating hero.
+
+### Part 20: redesign Phase 5 (Theory and Control Design)
+
+**Prompt (verbatim):** 35. "it works now, start phase 5" (confirming the 3D fix on his laptop). Claude planned in plan mode; Andrew approved `docs/plan-redesign-phase5-claude.md`.
+
+**What the AI produced (presentation only; every equation, unit, meaning, chart, control and tested id kept):**
+- **Chapter navigator** (Theory and Control Design): a sticky numbered list beside the content on wide screens that marks the chapter in view, and a sticky "Jump to a chapter" menu on narrower screens. Built from buttons, because the smoke test counts links inside a `<nav>` as tabs.
+- **Theory** in the five chapters of ChatGPT's brief: (1) nonlinear glucose–insulin model, (2) units and physical interpretation, (3) linearization and transfer functions, (4) nonlinear gain and half-rule analysis, (5) feedforward and bolus. Each chapter has a large number, a title and a short introduction. Every card was kept (only regrouped), and equations sit in tinted "equation wells". No derivation is hidden, as the brief requires.
+- **Control Design** in the brief's eight chapters: configuration (the tuning inputs as a full-width bar instead of a tall column), the IMC method as a numbered three-step sequence, discrete PID, anti-windup, block diagram, stability margins, Bode/Nyquist, PID vs MPC.
+- **Block diagram, redrawn and interactive:** more spacing, consistent arrowheads, labelled signals (e, u, U, G, D, G_m), feedback, disturbance and feedforward paths in different colours with a legend. Each block is a button: selecting it highlights the block and its wires and shows its transfer function and live numbers underneath (for example, the controller's K_c follows τ_c). Phones get a purpose-drawn **vertical** diagram with the same blocks and details, instead of a wide drawing that scrolled sideways.
+- **Stability margins:** a strip of four numbers (PM, GM, ω_c, tolerable delay) above the existing cards, coloured by rule-of-thumb ranges (PM ≥ 30°, GM ≥ 1.7, marked [TO VERIFY in Seborg Ch. 14]). The cards with their equations stay below.
+- **Overview loop on phones** (deferred from the Phase 3 review): a vertical cycle (meal → glucose → sensor → controller → pump → insulin, with a dashed return arrow back to glucose) with readable text.
+
+**Problems hit and fixed:** at 1280 px the wide diagram beside its info panel was shrunk to about 60 % (8 px text), so the panel moved underneath. The three IMC steps side by side cut their equations off, so they became a vertical sequence. Chapter numbers wrapped ("0/1") in the navigator. The parameter table's symbol column wrapped mid-name. A TeX spacing command written with a single backslash showed as ",;" in the block details (found in the screenshots, fixed).
+
+**Tests added (content test, now 62 checks):** the margin strip shows the reference PM and GM; the Control Design navigator lists 8 chapters; every diagram block opens its own details with rendered equations; the controller block's K_c follows a τ_c change to 40 min (checked against `imcTuning()`); the Theory navigator lists 5 chapters, jumps to each and marks the one in view; on a 375 px phone, the diagram is the vertical drawing with no sideways scroll, the chapter menu replaces the list, and the Overview loop is vertical.
+
+**Results (local, CDN served from local copies):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light`, `/gemini/` (device light and dark); content test 62/62 in both themes; extended slider/preset/manual check clean; no sideways scroll and no console errors at 1280, 1024, 768 and 375 px in both themes; screenshots reviewed.
+
+**Next step:** Andrew reviews Theory and Control Design on the live site; then Phase 6 (AI Workflow, Video & Transcript, References).
