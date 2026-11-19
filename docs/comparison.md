@@ -136,6 +136,9 @@ Later changes to Claude's site (listed so the comparison stays honest):
   Overview (hero, loop diagram, four chapters with model numbers, concepts, AI strip) and an interactive **3D pancreas**
   (BodyParts3D mesh, three.js) whose schematic islet glow follows U(t) of the default run. Adds one library (three.js) and
   15 content-test checks. The engine is unchanged.
+- Redesign Phase 4 (`docs/plan-redesign-phase4-claude.md`): Simulator as a workspace (preset, status and actions in a
+  header; peak and nadir as lead KPIs; P1–P3 stacked on one linked time axis; quieter controls rail; compare, analysis
+  and detailed-metrics sections; a help panel). Adds a Reset button and removable saved-run chips. Presentation only.
 
 ## 6. Process lessons
 - **"Renders" is not "correct":** the smoke test checks that each chart has an SVG, so a chart with no data passes.

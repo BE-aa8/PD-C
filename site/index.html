@@ -221,48 +221,78 @@
   <section role="tabpanel" id="panel-simulator" aria-labelledby="tab-simulator" hidden>
     <p class="eyebrow">02 — Simulator</p>
     <h2>Closed-loop simulator</h2>
-    <p class="lead">Nonlinear model, RK4 with dt = 0.1 min; the PID runs every T<sub>s</sub> = 5 min on the sensor reading and
-      holds its output in between (zero-order hold).</p>
+    <p class="lead">Change the controller, the meal or the sensor and watch the closed loop respond.</p>
     <div class="sim-layout">
       <aside class="panel controls" id="sim-controls" aria-label="Simulator inputs"></aside>
-      <div>
-        <div id="sim-top"></div>
-        <div id="sim-warnings" class="warnings" aria-live="polite"></div>
-        <div class="row" style="margin-bottom:8px">
-          <span id="sim-badge" class="badge"></span>
-          <label class="ctl" style="margin:0">
-            <select id="band-select" aria-label="Band for pass/fail">
-              <option value="seborg">Seborg band 54 &lt; G &lt; 144</option>
-              <option value="clinical">Clinical band 70–180 (secondary)</option>
-            </select>
-          </label>
+      <div class="sim-main">
+        <div id="sim-top" class="ws-head">
+          <div class="ws-preset" id="sim-preset-slot"></div>
+          <div class="ws-status">
+            <span id="sim-badge" class="badge"></span>
+            <label class="ctl ws-band">
+              <select id="band-select" aria-label="Band for pass/fail">
+                <option value="seborg">Seborg band 54 &lt; G &lt; 144</option>
+                <option value="clinical">Clinical band 70–180 (secondary)</option>
+              </select>
+            </label>
+          </div>
+          <div class="ws-tools" role="toolbar" aria-label="Simulator actions">
+            <button class="btn primary" id="save-run" type="button">Save run</button>
+            <button class="btn" id="sim-reset" type="button">Reset</button>
+            <button class="btn help-btn" id="sim-help-btn" type="button" aria-expanded="false" aria-controls="sim-help" aria-label="How to read this page">?</button>
+          </div>
         </div>
-        <div id="sim-kpis" class="kpis"></div>
-        <div class="panel"><p class="chart-title">P1 · Glucose: true and measured</p><div id="p1" class="chart tall"></div>
-          <p class="chart-cap">Shaded: Seborg band 54–144 mg/dL; dashed: 70–180 mg/dL. Measured = what the controller sees (sampled, delayed, noisy).</p></div>
-        <div class="grid two" style="margin-top:14px">
-          <div class="panel"><p class="chart-title">P2 · Insulin infusion U: basal / feedback / bolus</p><div id="p2" class="chart"></div>
+        <div id="sim-help" class="help-panel" hidden>
+          <h4>How to read the simulator</h4>
+          <ul class="clean">
+            <li><b>Model:</b> the nonlinear glucose–insulin model of Seborg Ex. 23.3, integrated with RK4 at dt = 0.1 min. The PID
+              runs every T<sub>s</sub> = 5 min on the sensor reading and holds its output in between (zero-order hold).</li>
+            <li><b>Top chart (P1):</b> true glucose G, what the sensor reports (sampled, delayed, noisy), the set point, and the band.
+              The two charts under it share its time axis: zoom or pan any one and all three follow (double-click to reset).</li>
+            <li><b>Controls (left; on phones, below the charts):</b> every change re-runs the simulation at once. The preset menu
+              loads a textbook case; Reset returns to the default (Ex. 23.6(e), feedback only).</li>
+            <li><b>Save run</b> keeps up to 4 runs for the comparison chart (P8) further down; <b>Analysis</b> re-runs the model
+              across τ<sub>c</sub> and pre-bolus time.</li>
+          </ul>
+        </div>
+        <div id="sim-warnings" class="warnings" aria-live="polite"></div>
+        <div id="sim-kpis" class="kpis ws-kpis"></div>
+        <div class="panel instrument">
+          <div class="inst-row inst-main"><p class="chart-title">P1 · Glucose: true and measured</p><div id="p1" class="chart tall"></div>
+            <p class="chart-cap">Shaded: Seborg band 54–144 mg/dL; dashed: 70–180 mg/dL. Measured = what the controller sees (sampled, delayed, noisy).</p></div>
+          <div class="inst-row"><p class="chart-title">P2 · Insulin infusion U: basal / feedback / bolus</p><div id="p2" class="chart inst-sub"></div>
             <p class="chart-cap">Stacked: U = U<sub>basal</sub> + (feedback − basal) + bolus, clipped to [0, 115] mU/min.</p></div>
-          <div class="panel"><p class="chart-title">P3 · Meal disturbance D(t)</p><div id="p3" class="chart"></div>
+          <div class="inst-row"><p class="chart-title">P3 · Meal disturbance D(t)</p><div id="p3" class="chart inst-sub"></div>
             <p class="chart-cap">D = Σ A·m·e<sup>−k(t−t<sub>meal</sub>)</sup>, A = 9 mg/dL/min, k = 0.05 1/min.</p></div>
         </div>
-        <div class="panel" style="margin-top:14px">
-          <h3>Metrics (on true glucose)</h3>
-          <div class="table-wrap"><table id="metrics-table"></table></div>
-        </div>
-        <div class="panel" style="margin-top:14px">
-          <div class="row" style="justify-content:space-between"><p class="chart-title" style="margin:0">P8 · Saved runs overlay</p>
-            <div class="row"><button class="btn primary" id="save-run">Save this run</button><button class="btn" id="clear-runs">Clear</button></div></div>
-          <div id="p8" class="chart"></div>
-          <ol id="saved-list" class="saved-list"></ol>
-          <p class="chart-cap">Up to 4 saved runs (kept in this page only) plus the current run.</p>
-        </div>
-        <div class="grid two" style="margin-top:14px">
-          <div class="panel"><p class="chart-title">P10 · Peak and nadir vs τ<sub>c</sub> (live sweep)</p><div id="p10" class="chart"></div>
-            <p class="chart-cap">Each point is a full simulation with the current settings and IMC tuning at that τ<sub>c</sub>. Diamond = current τ<sub>c</sub>.</p></div>
-          <div class="panel"><p class="chart-title">P11 · Peak and nadir vs pre-bolus time (live sweep)</p><div id="p11" class="chart"></div>
-            <p class="chart-cap" id="p11-cap">Each point is a simulation with the static bolus started t<sub>pre</sub> min before each meal. Diamond = current t<sub>pre</sub>.</p></div>
-        </div>
+
+        <section class="ws-section" aria-labelledby="cmp-h">
+          <p class="eyebrow">Compare runs</p>
+          <div class="row ws-sec-head"><h3 id="cmp-h">P8 · Saved runs overlay</h3><button class="btn" id="clear-runs" type="button">Clear all</button></div>
+          <div class="panel">
+            <ol id="saved-list" class="saved-list chips" aria-label="Saved runs"></ol>
+            <div id="p8" class="chart"></div>
+            <p class="chart-cap">Up to 4 saved runs (kept in this page only) plus the current run. Save one with <b>Save run</b> at the top; remove one with its ×.</p>
+          </div>
+        </section>
+
+        <section class="ws-section" aria-labelledby="ana-h">
+          <p class="eyebrow">Analysis</p>
+          <h3 id="ana-h">How peak and nadir move with the design</h3>
+          <div class="grid two">
+            <div class="panel"><p class="chart-title">P10 · Peak and nadir vs τ<sub>c</sub> (live sweep)</p><div id="p10" class="chart"></div>
+              <p class="chart-cap">Each point is a full simulation with the current settings and IMC tuning at that τ<sub>c</sub>. Diamond = current τ<sub>c</sub>.</p></div>
+            <div class="panel"><p class="chart-title">P11 · Peak and nadir vs pre-bolus time (live sweep)</p><div id="p11" class="chart"></div>
+              <p class="chart-cap" id="p11-cap">Each point is a simulation with the static bolus started t<sub>pre</sub> min before each meal. Diamond = current t<sub>pre</sub>.</p></div>
+          </div>
+        </section>
+
+        <section class="ws-section" aria-labelledby="met-h">
+          <details class="disclosure" id="metrics-details" open>
+            <summary><span class="eyebrow">Detailed metrics</span><span id="met-h" class="disc-title">12 measures, each with its equation, units and meaning</span></summary>
+            <div class="panel"><div class="table-wrap"><table id="metrics-table"></table></div></div>
+          </details>
+        </section>
         <div class="callout"><h4>Why real systems are harder</h4><ul class="clean">
           <li>In this model the meal appears in the blood instantly, as D(t); real absorption has its own delay and shape.</li>
           <li>Insulin absorption from the pump site is lumped into one compartment (I).</li>

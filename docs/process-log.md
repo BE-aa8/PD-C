@@ -345,3 +345,22 @@ Written by Claude Code at the end of the session, from the session itself. Promp
 **Results (local, CDN served from local copies):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light` and `/gemini/` (device light and dark); content test 39/39 in both themes; no horizontal scroll at 375 px; no console errors at 1280 and 375 px in both themes; screenshots reviewed.
 
 **Next step:** Andrew reviews the Overview on the live site. Then Phase 4 (Simulator workspace), per the master plan.
+
+### Part 18: redesign Phase 4 (Simulator workspace)
+
+**Prompts and answers (verbatim):** after Phase 3 went live, Claude asked whether to fix the too-small phone loop diagram now or later; Andrew chose "Fold into Phase 5 (Recommended)" (noted in the master plan). Claude then planned Phase 4 in plan mode; Andrew approved it (`docs/plan-redesign-phase4-claude.md`).
+
+**What the AI produced (presentation only; every control, preset, chart id, equation and unit kept):**
+- **Workspace header:** the preset menu (the same `#sim-preset`, now built into the header instead of the controls rail), the pass/fail badge, the band menu, and a toolbar: Save run, **Reset** (new: back to the default Ex. 23.6(e) case) and **?** (new: an inline help panel with how to read the page and the numerical method, which used to be the page lead).
+- **KPI strip:** peak and nadir lead, larger, tinted red when they leave the band and green when inside, each with its time; time in band, IAE and bolus smaller.
+- **One instrument:** P1 at 520 px (360 on phones) with P2 and P3 attached below in the same panel and the same left margin, so the three time axes line up; zooming or panning any one moves the other two (double-click resets).
+- **Quieter controls rail:** a translucent panel on desktop; each group has a one-line description.
+- **Below the instrument:** "Compare runs" (P8 with each saved run as a chip with its colour and a remove button), "Analysis" (P10/P11) and "Detailed metrics" (the 12-row table in a disclosure, open on desktop, closed on phones). The "Why real systems are harder" callout stays at the end.
+
+**Problems hit and fixed:** an unexplained gap under the lead KPI tiles on phones turned out to be a class-name collision: the tiles' `lead` class also matched the page-lead paragraph style (its bottom margin and font size); renamed `kpi-key`. Five KPI tiles in one row clipped their values at 768–1180 px; they now sit as two lead tiles over three smaller ones. The metrics table's "Value" header wrapped mid-word.
+
+**Tests added (content test, now 45 checks):** the peak tile is flagged out of band for the default and in band for the pre-bolus case; Reset restores the default preset and the reference peak; the help button opens and closes its panel (`aria-expanded`); zooming P1 to 100–300 min moves P2 and P3 to the same range; removing a saved-run chip removes exactly its P8 trace.
+
+**Results (local, CDN served from local copies):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light` and `/gemini/` with the device in light and dark; content test 45/45 in both themes; extended slider/preset/manual-mode check clean; no horizontal scroll and no console errors at 1280, 1024, 768 and 375 px in both themes; screenshots reviewed.
+
+**Next step:** Andrew reviews the Simulator on the live site; then Phase 5 (Theory and Control Design, including the phone layout for both loop diagrams).

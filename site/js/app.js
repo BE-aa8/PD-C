@@ -71,6 +71,21 @@ function plot(id, data, layout) {
   const el = document.getElementById(id);
   if (!el || !HAS_PLOTLY) return;
   window.Plotly.react(el, data, layout, PCONF);
+  if (LINKED.has(id) && !el.dataset.linked && el.on) { el.dataset.linked = 'true'; el.on('plotly_relayout', (ev) => syncTimeAxis(id, ev)); }
+}
+// charts that share one time axis (the Simulator's P1-P3): zooming or panning one moves the others
+const LINKED = new Set();
+let syncing = false;
+function linkTimeAxes(ids) { ids.forEach((i) => LINKED.add(i)); }
+function syncTimeAxis(src, ev) {
+  if (syncing) return;
+  let upd = null;
+  if ('xaxis.range[0]' in ev) upd = { 'xaxis.range': [ev['xaxis.range[0]'], ev['xaxis.range[1]']] };
+  else if (Array.isArray(ev['xaxis.range'])) upd = { 'xaxis.range': ev['xaxis.range'].slice() };
+  else if (ev['xaxis.autorange']) { const r = document.getElementById(src).layout.xaxis.range; upd = { 'xaxis.range': r.slice() }; }
+  if (!upd) return;
+  syncing = true;
+  Promise.all([...LINKED].filter((i) => i !== src).map((i) => window.Plotly.relayout(i, upd))).finally(() => { syncing = false; });
 }
 
 // ------------------------------------------------------------------ state, presets
@@ -163,11 +178,12 @@ const MANUAL_ITEMS = (cond) => {
     { key: 'tauD_man', type: 'range', label: 'τD derivative time', min: 0, max: 60, step: 0.5, unit: 'min', d: 1, show: (s) => c(s) && s.tuning_mode === 'manual' && s.mode === 'PID' },
   ];
 };
+// the preset menu sits in the workspace header, not in the controls rail
+const SIM_PRESET_SPEC = [{ legend: null, items: [
+  { key: 'preset', type: 'select', label: 'Scenario', opts: [['custom', 'Custom (modified)'], ...PRESETS.map((p) => [p.id, p.label])] },
+] }];
 const SIM_SPEC = [
-  { legend: 'Preset', openMobile: true, items: [
-    { key: 'preset', type: 'select', label: 'Scenario', opts: [['custom', 'Custom (modified)'], ...PRESETS.map((p) => [p.id, p.label])] },
-  ] },
-  { legend: 'Controller', openMobile: true, items: [
+  { legend: 'Controller', desc: 'Loop on or off, PID mode, and how the gains are tuned.', openMobile: true, items: [
     { key: 'controller', type: 'select', label: 'Loop', opts: [['pid', 'Closed loop (PID)'], ['none', 'Open loop (basal infusion only)']] },
     { key: 'mode', type: 'seg', label: 'Mode', opts: [['P', 'P'], ['PI', 'PI'], ['PID', 'PID']], show: (s) => s.controller === 'pid' },
     TUNING_MODE_ITEM((s) => s.controller === 'pid'),
@@ -181,12 +197,12 @@ const SIM_SPEC = [
     { key: 'beta', type: 'range', label: 'Set-point weight β', min: 0, max: 1, step: 0.05, unit: '', d: 2, show: (s) => s.controller === 'pid' && s.sp_on },
     { key: 'anti_windup', type: 'select', label: 'Anti-windup', opts: [['clamp', 'Clamping (conditional integration)'], ['backcalc', 'Back-calculation'], ['off', 'Off']], show: (s) => s.controller === 'pid' && s.mode !== 'P' },
   ] },
-  { legend: 'Meal disturbance', items: [
+  { legend: 'Meal disturbance', desc: 'When the meal arrives and how large it is.', items: [
     { key: 'meal_plan', type: 'select', label: 'Meals', opts: [['one', 'One meal'], ['three', 'Three meals (480, 780, 1140 min)'], ['none', 'No meal']] },
     { key: 'meal_t', type: 'range', label: 'Meal time', min: 0, max: 300, step: 5, unit: 'min', d: 0, show: (s) => s.meal_plan === 'one' },
     { key: 'meal_mult', type: 'range', label: 'Meal size (× textbook meal)', min: 0, max: 3, step: 0.1, unit: '×', d: 1, show: (s) => s.meal_plan !== 'none' },
   ] },
-  { legend: 'Feedforward (static bolus)', items: [
+  { legend: 'Feedforward (static bolus)', desc: 'Act on the meal before glucose rises.', items: [
     { key: 'ff_enabled', type: 'check', label: 'Feedforward bolus on', show: (s) => s.meal_plan !== 'none' },
     { key: 'f_bolus', type: 'range', label: 'Bolus fraction f', min: 0, max: 1.5, step: 0.05, unit: '', d: 2, show: (s) => s.ff_enabled && s.meal_plan !== 'none' },
     { key: 'est_error', type: 'range', label: 'Meal estimate error', min: -0.5, max: 0.8, step: 0.05, unit: '', d: 2, pct: true, show: (s) => s.ff_enabled && s.meal_plan !== 'none' },
@@ -194,7 +210,7 @@ const SIM_SPEC = [
     { key: 'suspend_integral', type: 'check', label: 'Suspend integral during bolus', show: (s) => s.ff_enabled && s.meal_plan !== 'none' && s.controller === 'pid' },
     { key: 'suspend_extra', type: 'range', label: 'Extra suspend time after bolus', min: 0, max: 120, step: 10, unit: 'min', d: 0, show: (s) => s.ff_enabled && s.suspend_integral && s.meal_plan !== 'none' && s.controller === 'pid' },
   ] },
-  { legend: 'Sensor (CGM)', items: [
+  { legend: 'Sensor (CGM)', desc: 'Delay, lag, noise and faults in what the controller sees.', items: [
     { key: 'sensor_delay', type: 'range', label: 'Actual sensor delay θs', min: 0, max: 40, step: 0.5, unit: 'min', d: 1 },
     { key: 'sensor_lag', type: 'range', label: 'Sensor lag τs (0 or 0.5–15)', min: 0, max: 15, step: 0.5, unit: 'min', d: 1 },
     { key: 'noise_sd', type: 'range', label: 'Noise σ (display / control)', min: 0, max: 10, step: 0.5, unit: 'mg/dL', d: 1 },
@@ -204,7 +220,7 @@ const SIM_SPEC = [
     { key: 'drift_rate', type: 'range', label: 'Drift rate', min: -30, max: 30, step: 1, unit: 'mg/dL per h', d: 0, show: (s) => s.fault === 'drift' },
     { key: 'dropout_duration', type: 'range', label: 'Dropout length', min: 5, max: 120, step: 5, unit: 'min', d: 0, show: (s) => s.fault === 'dropout' },
   ] },
-  { legend: 'Set point, plant, horizon', items: [
+  { legend: 'Set point, plant, horizon', desc: 'Set-point step, sensitivity change, pump limits, run length.', items: [
     { key: 'sp_on', type: 'check', label: 'Set-point step', show: (s) => s.controller === 'pid' },
     { key: 'sp_t', type: 'range', label: 'Step time', min: 0, max: 600, step: 10, unit: 'min', d: 0, show: (s) => s.sp_on && s.controller === 'pid' },
     { key: 'sp_val', type: 'range', label: 'New set point', min: 55, max: 143, step: 1, unit: 'mg/dL', d: 0, show: (s) => s.sp_on && s.controller === 'pid' },
@@ -249,7 +265,7 @@ function buildControls(container, spec, prefix) {
       fs.className = 'grp';
       const narrow = window.matchMedia('(max-width: 900px)').matches;
       fs.open = !narrow || !!g.openMobile || spec.length === 1;
-      fs.innerHTML = `<summary>${g.legend}</summary>`;
+      fs.innerHTML = g.desc ? `<summary><span class="grp-name">${g.legend}<small class="grp-desc">${g.desc}</small></span></summary>` : `<summary>${g.legend}</summary>`;
     }
     for (const it of g.items) {
       const id = `${prefix}-${it.key}`;
@@ -388,6 +404,7 @@ const METRIC_ROWS = [
   ['time_at_Umin', 'Time at U_min = 0', 'min', '\\sum_i \\Delta t\\;[U_i \\le 0]', 'How long the pump is shut off: the only way to “remove” insulin.', 1],
 ];
 
+const INST_MARGIN = { l: 66, r: 14, t: 34, b: 44 };
 function renderSimulator() {
   const inputs = inputsOf(state);
   const r = M.simulate(inputs);
@@ -409,14 +426,16 @@ function renderSimulator() {
   const badge = document.getElementById('sim-badge');
   badge.className = 'badge ' + (m.stayed_in_band ? 'pass' : 'fail');
   badge.textContent = m.stayed_in_band ? `✓ Stayed inside ${band.name}` : `✗ Left ${band.name}`;
+  // peak and nadir lead, flagged when they leave the band; the other three are secondary
+  const peakOut = m.peak >= band.high, nadirOut = m.nadir <= band.low;
   const kp = [
-    ['Peak', `${fmt(m.peak, 1)} mg/dL`, `at ${fmt(m.t_peak, 0)} min`],
-    ['Nadir', `${fmt(m.nadir, 1)} mg/dL`, `at ${fmt(m.t_nadir, 0)} min`],
-    ['Time in band', `${fmt(m.pct_in_band, 1)} %`, band.name],
-    ['IAE', `${fmt(m.IAE, 0)}`, 'mg/dL·min'],
-    ['Bolus', `${fmt(r.bolusDelivered, 0)} mU`, `planned ${fmt(r.bolusPlanned, 0)} mU`],
+    ['Peak', `${fmt(m.peak, 1)} mg/dL`, `at ${fmt(m.t_peak, 0)} min · ${peakOut ? `above ${band.high}` : `below ${band.high}`}`, `kpi-key ${peakOut ? 'out' : 'in'}`],
+    ['Nadir', `${fmt(m.nadir, 1)} mg/dL`, `at ${fmt(m.t_nadir, 0)} min · ${nadirOut ? `below ${band.low}` : `above ${band.low}`}`, `kpi-key ${nadirOut ? 'out' : 'in'}`],
+    ['Time in band', `${fmt(m.pct_in_band, 1)} %`, band.name, ''],
+    ['IAE', `${fmt(m.IAE, 0)}`, 'mg/dL·min', ''],
+    ['Bolus', `${fmt(r.bolusDelivered, 0)} mU`, `planned ${fmt(r.bolusPlanned, 0)} mU`, ''],
   ];
-  document.getElementById('sim-kpis').innerHTML = kp.map(([k, v, s]) => `<div class="kpi"><div class="k">${k}</div><div class="v">${v}</div><div class="k">${esc(s)}</div></div>`).join('');
+  document.getElementById('sim-kpis').innerHTML = kp.map(([k, v, s, cls]) => `<div class="kpi ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="k">${esc(s)}</div></div>`).join('');
 
   // metrics table
   const tbl = document.getElementById('metrics-table');
@@ -431,7 +450,7 @@ function renderSimulator() {
     { x: t, y: G, name: 'True glucose G', mode: 'lines', line: { color: c.s1, width: 2 }, hovertemplate: '%{y:.1f} mg/dL' },
     { x: t, y: Gm, name: 'Measured (sensor)', mode: 'lines', line: { color: c.s2, width: 2, shape: 'hv' }, connectgaps: false, hovertemplate: '%{y:.1f} mg/dL' },
     { x: t, y: SP, name: 'Set point', mode: 'lines', line: { color: c.muted, width: 1.5, dash: 'dot' }, hovertemplate: '%{y:.0f} mg/dL' },
-  ], baseLayout({ shapes: bandShapes(c, band, tEnd), xaxis: { title: { text: 'time (min)' }, range: [0, tEnd] }, yaxis: { title: { text: 'glucose (mg/dL)' } } }));
+  ], baseLayout({ margin: INST_MARGIN, shapes: bandShapes(c, band, tEnd), xaxis: { title: { text: 'time (min)' }, range: [0, tEnd] }, yaxis: { automargin: false, title: { text: 'glucose (mg/dL)' } } }));
 
   // P2: U = basal part + feedback above basal + bolus
   const Ub = LM.U_basal;
@@ -444,11 +463,11 @@ function renderSimulator() {
     { x: t, y: decimate(above), name: 'Feedback above basal', stackgroup: 'u', line: { color: c.s1, width: 0.5, shape: 'hv' }, fillcolor: c.s1, hovertemplate: '%{y:.1f}' },
     { x: t, y: decimate(bol), name: 'Bolus (feedforward)', stackgroup: 'u', line: { color: c.s2, width: 0.5, shape: 'hv' }, fillcolor: c.s2, hovertemplate: '%{y:.1f}' },
     { x: [0, tEnd], y: [Ub, Ub], name: 'U_basal', mode: 'lines', line: { color: c.text2, width: 1, dash: 'dash' }, hoverinfo: 'skip' },
-  ], baseLayout({ xaxis: { title: { text: 'time (min)' }, range: [0, tEnd] }, yaxis: { title: { text: 'U (mU/min)' }, rangemode: 'tozero' } }));
+  ], baseLayout({ margin: INST_MARGIN, xaxis: { title: { text: 'time (min)' }, range: [0, tEnd] }, yaxis: { automargin: false, title: { text: 'U (mU/min)' }, rangemode: 'tozero' } }));
 
   // P3
   plot('p3', [{ x: t, y: decimate(r.D), name: 'D(t)', mode: 'lines', line: { color: c.s3, width: 2 }, fill: 'tozeroy', fillcolor: c.band, hovertemplate: '%{y:.2f} mg/dL/min' }],
-    baseLayout({ showlegend: false, xaxis: { title: { text: 'time (min)' }, range: [0, tEnd] }, yaxis: { title: { text: 'D (mg/dL/min)' }, rangemode: 'tozero' } }));
+    baseLayout({ showlegend: false, margin: { ...INST_MARGIN, t: 12 }, xaxis: { title: { text: 'time (min)' }, range: [0, tEnd] }, yaxis: { automargin: false, title: { text: 'D (mg/dL/min)' }, rangemode: 'tozero' } }));
 
   renderSaved();
   clearTimeout(sweepTimer);
@@ -470,7 +489,8 @@ function renderSaved() {
   if (r) traces.push({ x: decimate(r.t), y: decimate(r.G), name: 'Current run', mode: 'lines', line: { color: c.s1, width: 2.5 }, hovertemplate: '%{y:.1f}' });
   const tMax = Math.max(r ? r.t[r.t.length - 1] : 0, ...savedRuns.map((s) => s.t[s.t.length - 1]));
   plot('p8', traces, baseLayout({ shapes: bandShapes(c, null, tMax), xaxis: { title: { text: 'time (min)' } }, yaxis: { title: { text: 'true glucose (mg/dL)' } } }));
-  document.getElementById('saved-list').innerHTML = savedRuns.map((s, k) => `<li>#${k + 1}: ${esc(s.label)} (peak ${fmt(s.peak, 1)}, nadir ${fmt(s.nadir, 1)} mg/dL)</li>`).join('');
+  document.getElementById('saved-list').innerHTML = savedRuns.map((s, k) => `<li style="--chip:${cols[k]}"><span class="chip-sw" aria-hidden="true"></span>#${k + 1}: ${esc(s.label)} (peak ${fmt(s.peak, 1)}, nadir ${fmt(s.nadir, 1)} mg/dL)<button type="button" class="chip-x" data-rm="${k}" aria-label="Remove saved run ${k + 1}">×</button></li>`).join('');
+  document.getElementById('clear-runs').disabled = savedRuns.length === 0;
   document.getElementById('save-run').disabled = savedRuns.length >= 4;
 }
 
@@ -1211,7 +1231,18 @@ function init() {
   if (!HAS_KATEX) libw.push('The equation library (KaTeX) could not be loaded, so equations are shown as plain LaTeX.');
   document.getElementById('lib-warning').innerHTML = libw.map((x) => `<p class="warn">⚠ ${x}</p>`).join('');
 
+  buildControls(document.getElementById('sim-preset-slot'), SIM_PRESET_SPEC, 'sim');
   buildControls(document.getElementById('sim-controls'), SIM_SPEC, 'sim');
+  document.getElementById('sim-reset').addEventListener('click', () => applyPreset('default'));
+  const helpBtn = document.getElementById('sim-help-btn');
+  helpBtn.addEventListener('click', () => {
+    const open = helpBtn.getAttribute('aria-expanded') !== 'true';
+    helpBtn.setAttribute('aria-expanded', String(open));
+    document.getElementById('sim-help').hidden = !open;
+  });
+  // the long metrics table starts closed on phones
+  if (window.matchMedia('(max-width: 900px)').matches) document.getElementById('metrics-details').open = false;
+  linkTimeAxes(['p1', 'p2', 'p3']);
   syncControls();
   document.getElementById('band-select').addEventListener('change', (e) => setState({ band: e.target.value }));
   document.getElementById('save-run').addEventListener('click', () => {
@@ -1221,6 +1252,12 @@ function init() {
     renderSaved();
   });
   document.getElementById('clear-runs').addEventListener('click', () => { savedRuns = []; renderSaved(); });
+  document.getElementById('saved-list').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-rm]');
+    if (!b) return;
+    savedRuns.splice(+b.dataset.rm, 1);
+    renderSaved();
+  });
 
   // phones: one floating button that jumps to the controls, or back to the charts while the controls are in view
   const jump = document.getElementById('jump-btn');

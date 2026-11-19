@@ -109,6 +109,43 @@ for (const cs of ['unannounced', 'announced']) {
   }, cs);
   check(`P9 (${cs}) = DATA.mpcComparison`, p9.every(Boolean), JSON.stringify(p9));
 }
+// 5b. Simulator workspace (redesign Phase 4): KPI flag, Reset, help, linked time axes, saved-run chips
+await page.click('#tab-simulator');
+await page.waitForTimeout(800);
+const defPeak = E.scenarios.find((x) => x.name === 'ex23_6e_feedback_only').metrics.peak;
+check('KPI peak tile flags the out-of-band default peak', await page.locator('#sim-kpis .kpi').nth(0).evaluate((el) => el.classList.contains('out')), '');
+await page.selectOption('#sim-preset', 'pre15');
+await page.waitForTimeout(700);
+check('KPI peak tile shows in band for the pre-bolus case', await page.locator('#sim-kpis .kpi').nth(0).evaluate((el) => el.classList.contains('in')), '');
+await page.click('#sim-reset');
+await page.waitForTimeout(800);
+check('Reset restores the default case', (await page.locator('#sim-preset').inputValue()) === 'default' && Math.abs((await kpi(0)) - defPeak) <= 0.06, `${await kpi(0)} vs ${defPeak}`);
+const helpState = async () => [await page.locator('#sim-help-btn').getAttribute('aria-expanded'), await page.locator('#sim-help').isVisible()];
+const h0 = await helpState();
+await page.click('#sim-help-btn');
+const h1 = await helpState();
+await page.click('#sim-help-btn');
+const h2 = await helpState();
+check('Help button opens and closes its panel', h0[0] === 'false' && !h0[1] && h1[0] === 'true' && h1[1] && h2[0] === 'false' && !h2[1], JSON.stringify([h0, h1, h2]));
+await page.evaluate(() => window.Plotly.relayout('p1', { 'xaxis.range': [100, 300] }));
+await page.waitForTimeout(500);
+const ranges = await page.evaluate(() => ['p1', 'p2', 'p3'].map((id) => document.getElementById(id).layout.xaxis.range.map((v) => Math.round(v))));
+check('P1 zoom moves P2 and P3 to the same time range', ranges.every((r) => r[0] === 100 && r[1] === 300), JSON.stringify(ranges));
+await page.click('#save-run');
+await page.selectOption('#sim-preset', 'pre15');
+await page.waitForTimeout(600);
+await page.click('#save-run');
+await page.waitForTimeout(300);
+const p8n = async () => page.evaluate(() => document.getElementById('p8').data.length);
+const before = [await page.locator('#saved-list li').count(), await p8n()];
+await page.locator('#saved-list li').nth(0).locator('button.chip-x').click();
+await page.waitForTimeout(300);
+const after1 = [await page.locator('#saved-list li').count(), await p8n()];
+const leftLabel = await page.evaluate(() => document.getElementById('p8').data[0].name);
+check('Removing a saved-run chip removes its P8 trace', before[0] === 2 && before[1] === 3 && after1[0] === 1 && after1[1] === 2 && leftLabel.includes('pre-bolus'), `${JSON.stringify(before)} → ${JSON.stringify(after1)}, left: ${leftLabel}`);
+await page.click('#clear-runs');
+await page.click('#sim-reset');
+await page.waitForTimeout(500);
 check('No page errors (desktop)', errors.length === 0, errors.join(' | '));
 await page.close();
 

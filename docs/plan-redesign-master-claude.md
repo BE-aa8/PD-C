@@ -68,7 +68,8 @@ Brief's chapter names used as headings; all equations, units, meanings and chart
 **Control Design (Phase 5):** the **block diagram as a viewer frame**, full width, interactive (hover/tap a block → its
 transfer function and live numbers; signal path highlights); a purpose-built vertical layout of the diagram on phones
 instead of shrinking it. Compact tuning bar with distinct IMC / Manual states; margins as metrics; Bode and Nyquist
-two-up; PID vs MPC two-up with the announced toggle.
+two-up; PID vs MPC two-up with the announced toggle. *(Added after Phase 3 review: the same phone layout also
+replaces the Overview loop diagram, whose labels are too small at 375 px.)*
 
 **AI Workflow (Phase 6):** horizontal journey (vertical on phones): plan → critique → human decisions → two independent
 builds → tests and comparison → selection; each stage with a short text and evidence links (docs, CI runs); a clear
