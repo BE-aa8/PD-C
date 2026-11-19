@@ -1,0 +1,17 @@
+3D anatomy data in this folder (pancreas.bin, pancreas.json)
+
+Source: BodyParts3D, (c) The Database Center for Life Science, licensed under
+Creative Commons Attribution-Share Alike 2.1 Japan (CC BY-SA 2.1 JP).
+License deed: https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en
+Original database: http://lifesciencedb.jp/bp3d/  (data version 3.0 / 20110915)
+Files used: FMA7198nsn (pancreas), FMA10419 (pancreatic duct), FMA7206 (duodenum),
+obtained from the STL mirror https://github.com/Kevin-Mattheus-Moerman/BodyParts3D
+
+Please cite: Mitsuhashi N, Fujieda K, Tamura T, Kawamoto S, Takagi T, Okubo K.
+BodyParts3D: 3D structure database for anatomical concepts.
+Nucleic Acids Res. 2009;37(Database issue):D782-5. doi:10.1093/nar/gkn613
+
+Adaptations (by tools/build_pancreas_mesh.mjs in this repository): duplicate vertices merged;
+coordinates re-centred on the pancreas, scaled (1 unit = 50 mm) and rotated to a y-up frame;
+hotspot anchor points and schematic islet points added. These adapted files are shared under
+the same license (CC BY-SA 2.1 JP). The schematic islet points are illustrative, not anatomical data.

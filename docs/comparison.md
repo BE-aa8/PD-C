@@ -132,6 +132,10 @@ Later changes to Claude's site (listed so the comparison stays honest):
   design tokens, self-hosted fonts, dark-by-default theme with a toggle, re-themed charts. Presentation only.
 - Redesign Phase 2 (`docs/plan-redesign-phase2-claude.md`): sticky top bar with sliding tab indicator, disclaimer strip,
   page headers, footer, custom sliders and selects. Presentation only.
+- Redesign Phase 3 (`docs/plan-redesign-master-claude.md`, references in `docs/redesign-references-chatgpt.md`): new
+  Overview (hero, loop diagram, four chapters with model numbers, concepts, AI strip) and an interactive **3D pancreas**
+  (BodyParts3D mesh, three.js) whose schematic islet glow follows U(t) of the default run. Adds one library (three.js) and
+  15 content-test checks. The engine is unchanged.
 
 ## 6. Process lessons
 - **"Renders" is not "correct":** the smoke test checks that each chart has an SVG, so a chart with no data passes.

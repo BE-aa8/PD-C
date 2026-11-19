@@ -320,3 +320,28 @@ Written by Claude Code at the end of the session, from the session itself. Promp
 **Results (local, CDN served from local copies):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light` and `/gemini/`; content test 25/25 in both themes; extended slider/preset/manual-mode check clean in both themes; no horizontal scroll at 1280, 1024, 768 or 375 px; screenshots reviewed (including the scrolled bar, the 1024 px two-row header, the footer, and the phone jump).
 
 **Next step:** Phase 3 (Overview: hero, process diagram, the four teaching points with real model results, AI story, route into the Simulator). The hero visual will be generated from the model's own trajectories; to confirm with Andrew first.
+
+### Part 17: visual references, master redesign plan, and redesign Phase 3 (Overview with a 3D pancreas)
+
+**Prompts (verbatim):**
+32. "before starting phase three, take note of these, well, notes. I gave ChatGPT 4 screen recordings of website layouts that I particularly liked. the 3d model pancreas is a dead set. I 100% NEED that on the website hehehehe. anyways:" followed by ChatGPT's "Visual Reference Analysis & Design Inspiration" notes (Harley-Davidson, Rivian, Nutrien, an interactive 3D pancreas viewer), saved verbatim as `docs/redesign-references-chatgpt.md`. ChatGPT's notes said a 3D model was optional; Andrew overrode that.
+33. Answers to Claude's questions: the pancreas goes in the "Overview hero + viewer (Recommended)"; "Yes, driven by real sim data (Recommended)". Then approved the master plan (`docs/plan-redesign-master-claude.md`: design analysis against the four references, reusable patterns, a tab-by-tab plan for Phases 3–6, and the Phase 3 build).
+
+**Decisions and reasoning:**
+- **Real anatomy, not a made-up shape:** Claude searched for an openly licensed pancreas mesh and used BodyParts3D (Database Center for Life Science, CC BY-SA 2.1 Japan; Mitsuhashi et al. 2009): pancreas, main pancreatic duct and duodenum. A Node script (`tools/build_pancreas_mesh.mjs`, no dependencies) downloads the STLs, merges vertices, re-centres and smooths them, and writes a 330 KB binary plus a JSON header. The source STLs are not committed; the adapted mesh carries the same licence (`site/models/LICENSE-BodyParts3D.txt`) and is credited on the References page and in the footer.
+- **"Driven by real sim data":** the hero's islet points glow with the insulin rate U(t)/U_max from `simulate()` of the default case while a playhead runs along the true-glucose trace (the same arrays the Simulator shows). The islets are labelled schematic everywhere: they are random points on the surface, not anatomical data. The one physiology sentence (β-cells release insulin) is marked [Seborg et al., Ch. 23 — TO VERIFY].
+- **One new library, loaded only when needed:** three.js 0.170.0 (MIT), pinned on jsDelivr through an importmap and imported only when the Overview is shown.
+- **Chapters use real numbers only:** feedback reacts late (peak 163.4 / nadir 49.4 mg/dL, 91.3 % in band), the pump's lopsided authority (+98.3 vs −16.7 mU/min, ratio 0.17), feedforward (pre-bolus: 107.9 / 62.2 mg/dL, 100 % in band), and delay limits stability (PM 58.6°, 48.1 min tolerable continuous vs 43.4 min sampled). All computed at load by the engine or read from `data.js`; the content test checks them against the Python reference.
+
+**What the AI produced:** the new Overview (hero with the rotating pancreas and live glucose trace; an interactive loop diagram; four alternating chapters with SVG visuals; the "Explore the organ" viewer with a tool rail — rotate, zoom in/out, wireframe, cross-section, isolate duct, duodenum context, reset — hotspots for head, neck, body, tail and the duct, and a breadcrumb; grouped course concepts; an AI-workflow strip; a call to action), `site/js/pancreas.js`, the mesh build script and assets, styles for the shared patterns (story section, viewer frame, metric).
+
+**Problems hit and fixed:**
+- Headless Chromium uses software WebGL (SwiftShader): about one frame every 7 s, which made screenshots time out. The viewer now detects software rendering or slow frames and switches to a low-power mode (no auto-rotate, renders only on interaction). It still rotates continuously on real GPUs.
+- The first frame's timestamp could precede the animation start, giving `NaN` SVG coordinates (fixed with a positive modulo and clamping).
+- The raw mesh looked faceted (Taubin smoothing); the Body and duct labels overlapped (duct label shown only when the duct is exposed); the Head and Neck labels overlapped (Head label flipped left); the organ was cropped on phones (the view widens on portrait stages); the chart legend entries collided.
+
+**Tests added (content test, now 39 checks):** hero trace = `simulate()` G(t) (SVG path inverted back to mg/dL); each chapter's numbers equal the Python reference (`tests/expected.json`) or `DATA`; both 3D viewers load; each tool toggles `aria-pressed` and Reset clears them; every visible hotspot opens its part in the info panel and breadcrumb; with WebGL disabled, the fallback notice appears and the chapters still render; no page errors.
+
+**Results (local, CDN served from local copies):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light` and `/gemini/` (device light and dark); content test 39/39 in both themes; no horizontal scroll at 375 px; no console errors at 1280 and 375 px in both themes; screenshots reviewed.
+
+**Next step:** Andrew reviews the Overview on the live site. Then Phase 4 (Simulator workspace), per the master plan.

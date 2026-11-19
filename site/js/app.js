@@ -913,6 +913,260 @@ function renderRefs() {
   document.getElementById('ref-list').innerHTML = Object.entries(DATA.sources).map(([k, v]) => `<li><code>${esc(k)}</code>: ${esc(v)}</li>`).join('');
 }
 
+// ------------------------------------------------------------------ OVERVIEW (story + 3D pancreas)
+// Every number on the Overview is computed here from the engine (simulate, metrics, linearModel, margins) or DATA.
+const OV = {};
+function ovData() {
+  if (OV.data) return OV.data;
+  const base = M.simulate({});
+  const pre = M.simulate({ ff_enabled: true, t_pre: 15 });
+  const d = M.DEFAULT_INPUTS;
+  OV.data = {
+    base, pre, mBase: M.metrics(base), mPre: M.metrics(pre),
+    mg: M.margins({ Kc: d.Kc, tauI: d.tauI, tauD: d.tauD, N: d.N, theta: d.sensor_delay }),
+    sampled: DATA.empiricalDelay.design_theta_s_10.value,
+  };
+  return OV.data;
+}
+// line chart in SVG user units; returns markup + scales
+function svgChart({ W, H, pad, tmax, ymin, ymax, series, band = true, xticks = [], yticks = [], xlab = '', ylab = '' }) {
+  const X = (t) => pad.l + (t / tmax) * (W - pad.l - pad.r);
+  const Y = (y) => pad.t + (1 - (y - ymin) / (ymax - ymin)) * (H - pad.t - pad.b);
+  let s = '';
+  if (band) s += `<rect class="svg-band" x="${X(0)}" y="${Y(P.band_high)}" width="${X(tmax) - X(0)}" height="${Y(P.band_low) - Y(P.band_high)}"/>`;
+  for (const y of yticks) s += `<line class="svg-grid" x1="${X(0)}" x2="${X(tmax)}" y1="${Y(y)}" y2="${Y(y)}"/><text class="svg-tick" x="${X(0) - 8}" y="${Y(y) + 4}" text-anchor="end">${y}</text>`;
+  for (const t of xticks) s += `<text class="svg-tick" x="${X(t)}" y="${H - pad.b + 16}" text-anchor="middle">${t}</text>`;
+  if (xticks.length) s += `<line class="svg-axis" x1="${X(0)}" x2="${X(tmax)}" y1="${H - pad.b}" y2="${H - pad.b}"/>`;
+  if (xlab) s += `<text class="svg-tick" x="${X(tmax)}" y="${H - 4}" text-anchor="end">${xlab}</text>`;
+  if (ylab) s += `<text class="svg-tick" x="${X(0) - 8}" y="${pad.t - 8}" text-anchor="end">${ylab}</text>`;
+  for (const se of series) {
+    const step = se.step || 10;
+    let d = '';
+    for (let i = 0; i < se.t.length; i += step) {
+      if (!fin(se.y[i])) continue;
+      d += `${d ? 'L' : 'M'}${X(se.t[i]).toFixed(1)},${Y(se.y[i]).toFixed(1)}`;
+    }
+    s += `<path class="${se.cls}" d="${d}"/>`;
+  }
+  return { s, X, Y };
+}
+const metricHTML = (v, unit, label, cls = '') => `<div class="metric ${cls}"><div class="mv">${v}<small>${unit}</small></div><div class="ml">${label}</div></div>`;
+
+function buildOverview() {
+  const D = ovData();
+  const { base, pre, mBase, mPre, mg, sampled } = D;
+  const tEnd = base.t[base.t.length - 1];
+
+  // hero trace (true glucose of the default run + band); playhead moved by animateHero()
+  const ht = svgChart({ W: 320, H: 120, pad: { l: 2, r: 2, t: 6, b: 6 }, tmax: tEnd, ymin: 30, ymax: 180, series: [{ t: base.t, y: base.G, cls: 'svg-g', step: 20 }] });
+  document.getElementById('hero-trace').innerHTML = `${ht.s}<line id="hero-ph" class="svg-playhead" x1="0" x2="0" y1="0" y2="120"/><circle id="hero-dot" class="svg-dot" r="4.5" cx="0" cy="0"/>`;
+  OV.heroScale = ht;
+
+  // chapter 1: feedback only
+  const c1 = svgChart({ W: 480, H: 260, pad: { l: 40, r: 14, t: 26, b: 34 }, tmax: tEnd, ymin: 30, ymax: 180, xticks: [0, 120, 240, 360, 480, 600], yticks: [50, 100, 150], xlab: 'time (min)', ylab: 'mg/dL',
+    series: [{ t: base.t, y: base.Gm.map((v) => (v === null ? NaN : v)), cls: 'svg-gm', step: 5 }, { t: base.t, y: base.G, cls: 'svg-g', step: 5 }] });
+  const ip = base.G.indexOf(mBase.peak), inad = base.G.indexOf(mBase.nadir);
+  document.getElementById('ch-late-svg').innerHTML = c1.s +
+    `<circle class="svg-dot" cx="${c1.X(base.t[ip])}" cy="${c1.Y(mBase.peak)}" r="4.5"/><text class="svg-label" x="${c1.X(base.t[ip]) + 10}" y="${c1.Y(mBase.peak) + 4}">peak ${fmt(mBase.peak, 1)}</text>` +
+    `<circle class="svg-dot" cx="${c1.X(base.t[inad])}" cy="${c1.Y(mBase.nadir)}" r="4.5"/><text class="svg-label" x="${c1.X(base.t[inad]) + 10}" y="${c1.Y(mBase.nadir) + 14}">nadir ${fmt(mBase.nadir, 1)}</text>` +
+    `<text class="svg-label" x="${c1.X(tEnd) - 4}" y="${c1.Y(P.band_high) - 6}" text-anchor="end">54–144 band</text>` +
+    `<line class="svg-g" x1="270" x2="292" y1="16" y2="16"/><text class="svg-tick" x="298" y="20">true glucose</text><line class="svg-gm" x1="392" x2="414" y1="16" y2="16"/><text class="svg-tick" x="420" y="20">sensor</text>`;
+  document.getElementById('ch-late-metrics').innerHTML =
+    metricHTML(fmt(mBase.peak, 1), 'mg/dL', 'peak, above the 144 limit', mBase.peak >= P.band_high ? 'bad' : '') +
+    metricHTML(fmt(mBase.nadir, 1), 'mg/dL', 'nadir, below the 54 limit', mBase.nadir <= P.band_low ? 'bad' : '') +
+    metricHTML(fmt(mBase.pct_in_band, 1), '%', 'of the time inside the band');
+
+  // chapter 2: lopsided pump authority around the basal rate
+  const up = P.U_max - LM.U_basal, down = LM.U_basal - P.U_min;
+  const AX = (u) => 40 + (u / P.U_max) * 400;
+  document.getElementById('ch-auth-svg').innerHTML =
+    `<text class="svg-tick" x="40" y="44">0</text><text class="svg-tick" x="440" y="44" text-anchor="end">${fmt(P.U_max, 0)} mU/min</text>` +
+    `<rect x="${AX(0)}" y="60" width="${AX(P.U_max) - AX(0)}" height="56" rx="10" fill="var(--surface-elev)"/>` +
+    `<rect x="${AX(0)}" y="60" width="${AX(LM.U_basal) - AX(0)}" height="56" rx="10" fill="var(--crit-soft)" stroke="var(--crit)" stroke-width="1.2"/>` +
+    `<rect x="${AX(LM.U_basal)}" y="60" width="${AX(P.U_max) - AX(LM.U_basal)}" height="56" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.2"/>` +
+    `<line x1="${AX(LM.U_basal)}" x2="${AX(LM.U_basal)}" y1="48" y2="128" stroke="var(--text)" stroke-width="2"/>` +
+    `<text class="svg-label-strong" x="${AX(LM.U_basal)}" y="150" text-anchor="middle">basal ${fmt(LM.U_basal, 1)}</text>` +
+    `<text class="svg-label" x="${(AX(LM.U_basal) + AX(P.U_max)) / 2}" y="93" text-anchor="middle">can add ${fmt(up, 1)} mU/min</text>` +
+    `<text class="svg-label" x="${AX(0) + 4}" y="190">can remove only ${fmt(down, 1)} mU/min (the pump can't go below 0)</text>` +
+    `<path d="M${AX(LM.U_basal) - 4},176 L${AX(0) + 8},176" stroke="var(--crit)" stroke-width="1.6" fill="none" marker-end="url(#arr)"/>` +
+    `<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--crit)"/></marker></defs>`;
+  document.getElementById('ch-auth-metrics').innerHTML =
+    metricHTML(`+${fmt(up, 1)}`, 'mU/min', 'room to add insulin above basal', 'good') +
+    metricHTML(`−${fmt(down, 1)}`, 'mU/min', 'room to remove it', 'bad') +
+    metricHTML(fmt(LM.authorityRatio, 2), '', 'down ÷ up authority ratio');
+
+  // chapter 3: feedback only vs 15-min pre-bolus
+  const c3 = svgChart({ W: 480, H: 260, pad: { l: 40, r: 14, t: 26, b: 34 }, tmax: tEnd, ymin: 30, ymax: 180, xticks: [0, 120, 240, 360, 480, 600], yticks: [50, 100, 150], xlab: 'time (min)', ylab: 'mg/dL',
+    series: [{ t: base.t, y: base.G, cls: 'svg-alt', step: 5 }, { t: pre.t, y: pre.G, cls: 'svg-g', step: 5 }] });
+  document.getElementById('ch-ff-svg').innerHTML = c3.s +
+    `<line class="svg-alt" x1="250" x2="272" y1="16" y2="16"/><text class="svg-tick" x="278" y="20">feedback only</text><line class="svg-g" x1="370" x2="392" y1="16" y2="16"/><text class="svg-tick" x="398" y="20">+ pre-bolus</text>`;
+  document.getElementById('ch-ff-metrics').innerHTML =
+    metricHTML(fmt(mPre.peak, 1), 'mg/dL', `peak (was ${fmt(mBase.peak, 1)})`, 'good') +
+    metricHTML(fmt(mPre.nadir, 1), 'mg/dL', `nadir (was ${fmt(mBase.nadir, 1)})`, 'good') +
+    metricHTML(fmt(mPre.pct_in_band, 1), '%', 'of the time inside the band');
+
+  // chapter 4: delay axis — current sensor delay vs tolerable delay (continuous) and the sampled limit
+  const dmax = 60, DX = (d) => 40 + (d / dmax) * 400;
+  const cont = mg.total_tolerable_delay, theta = M.DEFAULT_INPUTS.sensor_delay;
+  let ticks = '';
+  for (let d = 0; d <= dmax; d += 10) ticks += `<line class="svg-grid" x1="${DX(d)}" x2="${DX(d)}" y1="70" y2="150"/><text class="svg-tick" x="${DX(d)}" y="172" text-anchor="middle">${d}</text>`;
+  document.getElementById('ch-stab-svg').innerHTML = ticks +
+    `<rect x="${DX(0)}" y="96" width="${DX(sampled) - DX(0)}" height="28" rx="8" fill="var(--accent-soft)"/>` +
+    `<rect x="${DX(sampled)}" y="96" width="${DX(cont) - DX(sampled)}" height="28" fill="var(--warn-soft)"/>` +
+    `<rect x="${DX(cont)}" y="96" width="${DX(dmax) - DX(cont)}" height="28" rx="8" fill="var(--crit-soft)"/>` +
+    `<line x1="${DX(theta)}" x2="${DX(theta)}" y1="84" y2="136" stroke="var(--text)" stroke-width="2.5"/>` +
+    `<text class="svg-label-strong" x="${DX(theta)}" y="76" text-anchor="middle">sensor ${fmt(theta, 0)} min</text>` +
+    `<line x1="${DX(sampled)}" x2="${DX(sampled)}" y1="90" y2="130" stroke="var(--warn)" stroke-width="2"/>` +
+    `<text class="svg-label" x="${DX(sampled) - 4}" y="146" text-anchor="end">sampled ${fmt(sampled, 1)}</text>` +
+    `<line x1="${DX(cont)}" x2="${DX(cont)}" y1="90" y2="130" stroke="var(--crit)" stroke-width="2"/>` +
+    `<text class="svg-label" x="${DX(cont) + 4}" y="146">continuous ${fmt(cont, 1)}</text>` +
+    `<text class="svg-tick" x="${DX(dmax)}" y="196" text-anchor="end">total delay in the loop (min)</text>` +
+    `<text class="svg-label" x="${DX(2)}" y="230">stable</text><text class="svg-label" x="${DX(dmax) - 2}" y="230" text-anchor="end">sustained oscillation</text>`;
+  document.getElementById('ch-stab-metrics').innerHTML =
+    metricHTML(`${fmt(mg.PM_deg, 1)}°`, '', 'phase margin with the 10-min sensor delay') +
+    metricHTML(fmt(cont, 1), 'min', 'tolerable delay, continuous estimate') +
+    metricHTML(fmt(sampled, 1), 'min', 'limit in the sampled loop (Python reference)');
+
+  buildLoop();
+  initOrganUI();
+}
+
+// interactive loop diagram (numbers from DATA / the engine)
+function buildLoop() {
+  const d = M.DEFAULT_INPUTS;
+  const nodes = [
+    { k: 'controller', t: 'Controller', s: 'discrete PID', x: 90, y: 180, role: 'Controller',
+      p: `Discrete PID, IMC-tuned with τc = 20 min: Kc = ${fmt(d.Kc, 3)} (mU/min)/(mg/dL), τI = ${fmt(d.tauI, 1)} min, τD = ${fmt(d.tauD, 1)} min. It runs every ${fmt(P.Ts, 0)} min.` },
+    { k: 'pump', t: 'Pump', s: `0–${fmt(P.U_max, 0)} mU/min`, x: 210, y: 60, role: 'Final control element',
+      p: `Sets the insulin infusion rate U between ${fmt(P.U_min, 0)} and ${fmt(P.U_max, 0)} mU/min; the basal rate is ${fmt(LM.U_basal, 1)} mU/min.` },
+    { k: 'insulin', t: 'Insulin', s: 'two lags', x: 430, y: 60, role: 'Manipulated path',
+      p: `Plasma insulin I acts through the remote effect X: two lags with time constants τI = ${fmt(LM.tauI, 1)} min and τX = ${fmt(LM.tauX, 1)} min.` },
+    { k: 'glucose', t: 'Glucose', s: 'the process', x: 550, y: 180, role: 'Process',
+      p: `The controlled variable: the three-state nonlinear model of Seborg Ex. 23.3 (glucose, remote insulin effect, plasma insulin), basal ${fmt(P.G_basal, 0)} mg/dL. Target band ${fmt(P.band_low, 0)}–${fmt(P.band_high, 0)} mg/dL.` },
+    { k: 'sensor', t: 'Sensor', s: `every ${fmt(P.Ts, 0)} min`, x: 320, y: 300, role: 'Measurement',
+      p: `A glucose sensor sampled every ${fmt(P.Ts, 0)} min that reports with a ${fmt(P.sensor_delay, 0)}-min delay: the controller always sees the past.` },
+  ];
+  const meal = { k: 'meal', t: 'Meal', s: 'disturbance', x: 560, y: 46, role: 'Disturbance',
+    p: `D(t) = A·e^(−kt) with A = ${fmt(P.meal_A, 0)} mg/dL/min and k = ${fmt(P.meal_k, 2)} 1/min: glucose appears in the blood faster than insulin can act.` };
+  const all = [...nodes, meal];
+  const box = (n) => `<g class="node" data-k="${n.k}" tabindex="0" role="button" aria-label="${n.t}: ${n.role}">
+    <rect x="${n.x - 62}" y="${n.y - 26}" width="124" height="52" rx="14"/>
+    <text class="nt" x="${n.x}" y="${n.y - 2}" text-anchor="middle">${n.t}</text><text class="ns" x="${n.x}" y="${n.y + 15}" text-anchor="middle">${n.s}</text></g>`;
+  const svg = document.getElementById('loop-svg');
+  svg.innerHTML = `<ellipse class="ring" cx="320" cy="180" rx="230" ry="120"/><ellipse class="flow" cx="320" cy="180" rx="230" ry="120" transform="rotate(180 320 180)"/>
+    <path d="M560,72 L556,140" stroke="var(--warn)" stroke-width="2" fill="none" marker-end="url(#arrw)"/>
+    <defs><marker id="arrw" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--warn)"/></marker></defs>
+    <text class="center" x="320" y="176" text-anchor="middle">closed loop</text><text class="center" x="320" y="196" text-anchor="middle">feedback</text>
+    ${all.map(box).join('')}`;
+  const info = document.getElementById('loop-info');
+  const show = (k) => {
+    const n = all.find((x) => x.k === k);
+    svg.querySelectorAll('.node').forEach((g) => g.classList.toggle('active', g.dataset.k === k));
+    info.innerHTML = `<p class="role">${n.role}</p><h4>${n.t}</h4><p>${esc(n.p)}</p>`;
+  };
+  svg.querySelectorAll('.node').forEach((g) => {
+    g.addEventListener('click', () => show(g.dataset.k));
+    g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(g.dataset.k); } });
+  });
+  show('glucose');
+}
+
+// 3D pancreas: hero viewer (driven by the default run's U(t)) + full viewer with tools and hotspots
+const ORGAN_TEXT = {
+  null: ['Pancreas', 'Select a label on the model to explore its parts. The anatomy is real, segmented 3D data (BodyParts3D); the glowing islets are schematic.'],
+  head: ['Head', 'The widest part, lying in the C-shaped curve of the duodenum (switch on Duodenum to see it).'],
+  neck: ['Neck', 'The short, narrow part joining the head to the body.'],
+  body: ['Body', 'The main length of the gland, running across the abdomen behind the stomach.'],
+  tail: ['Tail', 'The narrow end, reaching toward the spleen.'],
+  duct: ['Main pancreatic duct', 'Runs along the gland and drains into the duodenum. Shown alone, with the rest of the pancreas faded.'],
+};
+const ISLET_NOTE = 'Islets (schematic): small clusters of cells scattered through the pancreas whose β-cells release insulin when glucose rises — the body\'s own glucose controller, which an artificial pancreas replaces with a sensor, an algorithm and a pump. [Seborg et al., Ch. 23 — TO VERIFY]';
+function organInfo(key) {
+  const [h, p] = ORGAN_TEXT[key] || ORGAN_TEXT.null;
+  document.getElementById('organ-info').innerHTML = `<h4>${h}</h4><p>${p}</p><p class="src">${ISLET_NOTE}</p>`;
+  document.getElementById('organ-crumb').innerHTML = `Abdomen <span aria-hidden="true">›</span> Pancreas${key ? ` <span aria-hidden="true">›</span> ${h}` : ''}`;
+}
+function initOrganUI() {
+  organInfo(null);
+  document.getElementById('ov-explore').addEventListener('click', () => document.getElementById('organ').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  const rail = document.querySelector('#organ-viewer .viewer-rail');
+  rail.addEventListener('click', (e) => {
+    const b = e.target.closest('.tool');
+    if (!b || !OV.organ) return;
+    const t = b.dataset.tool;
+    if (t === 'zoom-in') OV.organ.zoom(0.85);
+    else if (t === 'zoom-out') OV.organ.zoom(1 / 0.85);
+    else if (t === 'reset') { OV.organ.reset(); rail.querySelectorAll('[aria-pressed]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.tool === 'rotate' && OV.organ.rotating))); }
+    else {
+      const on = b.getAttribute('aria-pressed') !== 'true';
+      b.setAttribute('aria-pressed', String(on));
+      OV.organ.setTool(t, on);
+    }
+  });
+}
+async function initViewers() {
+  if (OV.started) return;
+  OV.started = true;
+  let mod;
+  try { mod = await import('./pancreas.js'); } catch (e) { console.warn('3D viewer unavailable', e); return; }
+  try {
+    OV.hero = await mod.createPancreasViewer(document.getElementById('hero-stage'), { mode: 'hero' });
+  } catch (e) { console.warn('hero viewer failed', e); }
+  animateHero();
+  const organStage = document.getElementById('organ-stage');
+  const startOrgan = async () => {
+    if (OV.organ !== undefined) return;
+    OV.organ = null;
+    try {
+      OV.organ = await mod.createPancreasViewer(organStage, {
+        mode: 'full',
+        onSelect: (k) => {
+          organInfo(k);
+          if (k === 'duct') document.querySelector('.tool[data-tool="isolate"]').setAttribute('aria-pressed', 'true');
+        },
+        onLowPower: () => document.querySelector('.tool[data-tool="rotate"]').setAttribute('aria-pressed', 'false'),
+      });
+      // the Rotate button shows what the viewer actually does (off under reduced motion or on a software renderer)
+      if (OV.organ) document.querySelector('.tool[data-tool="rotate"]').setAttribute('aria-pressed', String(OV.organ.rotating));
+    } catch (e) { console.warn('organ viewer failed', e); }
+  };
+  new IntersectionObserver((es, obs) => { if (es.some((x) => x.isIntersecting)) { obs.disconnect(); startOrgan(); } }, { rootMargin: '600px' }).observe(organStage);
+}
+// hero playhead: loops over the default run; islet glow follows U(t)
+function animateHero() {
+  const { base } = ovData();
+  const N = base.t.length;
+  const uMax = Math.max(...base.U);
+  const ph = document.getElementById('hero-ph'), dot = document.getElementById('hero-dot'), out = document.getElementById('hero-readout');
+  const S = OV.heroScale;
+  const setAt = (i) => {
+    const t = base.t[i], g = base.G[i], u = base.U[i];
+    ph.setAttribute('x1', S.X(t)); ph.setAttribute('x2', S.X(t));
+    dot.setAttribute('cx', S.X(t)); dot.setAttribute('cy', S.Y(g));
+    out.innerHTML = `t = <b>${fmt(t, 0)}</b> min · G = <b>${fmt(g, 1)}</b> mg/dL · U = <b>${fmt(u, 1)}</b> mU/min`;
+    if (OV.hero) OV.hero.setActivity(u / uMax);
+  };
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const iPeak = base.G.indexOf(ovData().mBase.peak);
+  if (reduced) { setAt(iPeak); return; }
+  const PERIOD = 14000;
+  const t0 = performance.now();
+  const loop = (now) => {
+    OV.heroRaf = requestAnimationFrame(loop);
+    if (activeTab !== 'overview' || document.hidden) return;
+    const f = ((((now - t0) % PERIOD) + PERIOD) % PERIOD) / PERIOD; // rAF time can precede t0 on the first frame
+    setAt(Math.max(0, Math.min(N - 1, Math.floor(f * N))));
+  };
+  setAt(iPeak);
+  OV.heroRaf = requestAnimationFrame(loop);
+}
+function initReveal() {
+  const els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) { els.forEach((e) => e.classList.add('in')); return; }
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
+  els.forEach((e) => io.observe(e));
+}
+
 // ------------------------------------------------------------------ tabs, init
 // sliding pill behind the active tab (CSS reads --ind-x / --ind-w on the nav)
 function positionIndicator(animate = true) {
@@ -947,6 +1201,7 @@ function showTab(tab, focus = false, user = false) {
   const jb = document.getElementById('jump-btn');
   if (jb) jb.hidden = tab !== 'simulator';
   renderTab(tab);
+  if (tab === 'overview') initViewers();
   if (HAS_PLOTLY) document.querySelectorAll(`#panel-${tab} .js-plotly-plot`).forEach((el) => window.Plotly.Plots.resize(el));
 }
 
@@ -1023,6 +1278,8 @@ function init() {
   new MutationObserver(() => { syncToggle(); for (const k of Object.keys(dirty)) dirty[k] = true; renderTab(activeTab); })
     .observe(root, { attributes: true, attributeFilter: ['data-theme'] });
   syncToggle();
+  try { buildOverview(); } catch (e) { console.warn('overview visuals failed', e); }
+  initReveal();
   showTab(location.hash ? location.hash.slice(1) : 'overview');
 }
 

@@ -13,6 +13,7 @@
       try { var saved = localStorage.getItem('ctl-theme'); if (saved === 'light' || saved === 'dark') t = saved; } catch (e) {}
       try { var q = new URLSearchParams(location.search).get('theme'); if (q === 'light' || q === 'dark') t = q; } catch (e) {}
       document.documentElement.setAttribute('data-theme', t);
+      document.documentElement.classList.add('js');
     })();
   </script>
   <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -21,6 +22,11 @@
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+  <script type="importmap">
+    { "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }
+  </script>
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
@@ -53,52 +59,162 @@
   <div id="lib-warning" class="warnings"></div>
 
   <!-- 1. OVERVIEW -->
-  <section role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
-    <p class="eyebrow">01 — Overview</p>
-    <h2>What this is</h2>
-    <p class="lead">A blood-glucose control loop treated as a chemical-process control problem. The "process" is the
-      three-state glucose–insulin model of Seborg Example 23.3 (an <em>illustrative textbook patient</em>); the manipulated
-      variable is the insulin infusion rate U from a pump that can only push between 0 and 115 mU/min; the disturbance is a
-      meal; the measurement comes from a sensor sampled every 5 min with a delay. You design the feedback (PID) and
-      feedforward (meal bolus) controllers and watch what happens.</p>
-    <div class="grid three">
-      <div class="card"><h3>Try it</h3><p>Open <b>Simulator</b>, pick a preset (start with "Ex. 23.6(e) feedback only"),
-        then move τ<sub>c</sub>, the sensor delay, or the pre-bolus time. Every slider redraws the charts.</p>
-        <button class="btn primary" data-goto="simulator">Open the simulator</button></div>
-      <div class="card"><h3>Why it is hard</h3><p>The pump's authority is asymmetric: it can add up to 98 mU/min above basal
-        but remove only 16.7 mU/min (it cannot go below zero). Insulin acts through two first-order lags, and the sensor adds
-        dead time, so feedback alone reacts late to a meal.</p></div>
-      <div class="card"><h3>Safety band</h3><p>Seborg's design target is 54 &lt; G &lt; 144 mg/dL. The 70–180 mg/dL
-        band is reported as a secondary metric only. Below 40 mg/dL the model (which has no counter-regulation) is qualitative.</p></div>
+  <section role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" class="ov">
+    <!-- A. Hero -->
+    <div class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">01 — Overview · CHEE 4071</p>
+        <h2 class="hero-title">Closing<br>the loop.</h2>
+        <p class="hero-statement">Blood glucose, treated as a chemical process. A sensor that reports late, a pump that can only push one way,
+          and a meal that arrives without warning. Design the controller, and watch the loop close.</p>
+        <p class="hero-context">Seborg, Edgar, Mellichamp &amp; Doyle, Example 23.3 / Exercise 23.6 · an illustrative textbook patient</p>
+        <div class="row hero-actions">
+          <button type="button" class="btn primary btn-lg" data-goto="simulator">Open the simulator</button>
+          <button type="button" class="btn btn-lg" id="ov-explore">Explore the organ</button>
+        </div>
+      </div>
+      <figure class="hero-visual">
+        <div class="viewer-stage hero-stage" id="hero-stage" role="img"
+          aria-label="Slowly rotating 3D model of the pancreas with schematic islets whose glow follows the simulated insulin rate"></div>
+        <div class="hero-trace">
+          <svg id="hero-trace" class="trace-svg" viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <p class="trace-readout" id="hero-readout" aria-live="off"></p>
+        </div>
+        <figcaption class="viewer-caption">Default simulation (Ex. 23.6(e)): true glucose with the 54–144 mg/dL band. Islets are schematic and not to scale;
+          their glow follows the insulin rate U(t). In an artificial pancreas, the pump takes over this insulin release. Anatomy: BodyParts3D (CC BY-SA 2.1 JP).</figcaption>
+      </figure>
     </div>
 
-    <div class="section"><h2>Course concepts used</h2></div>
-    <div class="grid two">
-      <div class="panel"><ul class="clean">
-        <li>Nonlinear ODE model, deviation variables, steady state (Ch. 2, 4)</li>
-        <li>Linearization, state space, transfer functions, poles (Ch. 4, 6)</li>
-        <li>Model reduction: half rule; FOPDT / SOPDT fits (Ch. 6, 7)</li>
-        <li>IMC-based PID tuning, τ<sub>c</sub> as the one tuning knob (Ch. 12)</li>
-        <li>Discrete PID, derivative filter, derivative on measurement, set-point weighting (Ch. 8, 17)</li>
-      </ul></div>
-      <div class="panel"><ul class="clean">
-        <li>Actuator saturation and integral windup: clamping vs back-calculation (Ch. 8)</li>
-        <li>Frequency response: Bode, Nyquist, gain and phase margins, delay margin (Ch. 13–14)</li>
-        <li>Feedforward control: ideal (improper) vs static; meal bolus as a feedforward pulse (Ch. 15)</li>
-        <li>Sensor dynamics, sampling, faults; model–plant mismatch (Ch. 9, 17)</li>
-        <li>Model predictive control, shown as precomputed results only (Ch. 20, 23)</li>
-      </ul></div>
+    <!-- B. The loop -->
+    <div class="ov-block reveal">
+      <p class="eyebrow">The engineering problem</p>
+      <h3 class="ov-headline">An artificial pancreas is a feedback loop.</h3>
+      <p class="ov-sub">Six blocks, one loop. Select a block to see its role.</p>
+      <div class="loop-wrap">
+        <svg id="loop-svg" class="loop-svg" viewBox="0 0 640 360" role="group" aria-label="Closed-loop diagram: meal, glucose, sensor, controller, pump, insulin"></svg>
+        <div class="loop-info card" id="loop-info" aria-live="polite"></div>
+      </div>
     </div>
 
-    <div class="section"><h2>Why this is an AI project</h2></div>
-    <p>One AI model (Claude) wrote the plan; a different model (Gemini) critiqued it; the student accepted or rejected each
-      critique point; the final plan was then built <em>independently</em> by two models into two websites. Both builds are
-      graded by the same tests against values produced by an independent Python reference implementation, so the comparison
-      is about numbers, not impressions. This page is the Claude build. Details of prompts, decisions, and the comparison
-      are on the <b>AI Workflow</b> tab (to be completed).</p>
-    <div class="callout"><h4>Scope</h4><p>Math stays at a 3rd/4th-year undergraduate process-control level. No drug names,
+    <!-- C. Four chapters -->
+    <div class="chapters">
+      <article class="story reveal" id="ch-late">
+        <div class="story-copy">
+          <p class="eyebrow">Chapter 1</p>
+          <h3 class="ov-headline">Feedback alone reacts too late.</h3>
+          <p>The sensor reports glucose 10 minutes late and only every 5 minutes, and insulin acts through two lags. By the time the
+            controller responds, the meal has already pushed glucose out of the band.</p>
+          <div class="metrics" id="ch-late-metrics"></div>
+          <button type="button" class="linkbtn" data-goto="simulator">Try it in the simulator →</button>
+        </div>
+        <div class="story-visual"><svg id="ch-late-svg" class="story-svg" viewBox="0 0 480 260" role="img" aria-label="Glucose response with feedback only"></svg></div>
+      </article>
+      <article class="story alt reveal" id="ch-auth">
+        <div class="story-copy">
+          <p class="eyebrow">Chapter 2</p>
+          <h3 class="ov-headline">The pump pushes one way.</h3>
+          <p>At the basal rate, the pump has a lot of room to add insulin and very little to take it away: it can't go below zero.
+            Undershoot is the risk the controller can barely correct.</p>
+          <div class="metrics" id="ch-auth-metrics"></div>
+          <button type="button" class="linkbtn" data-goto="theory">See the steady state in Theory →</button>
+        </div>
+        <div class="story-visual"><svg id="ch-auth-svg" class="story-svg" viewBox="0 0 480 260" role="img" aria-label="Pump authority above and below the basal rate"></svg></div>
+      </article>
+      <article class="story reveal" id="ch-ff">
+        <div class="story-copy">
+          <p class="eyebrow">Chapter 3</p>
+          <h3 class="ov-headline">Feedforward acts before the error.</h3>
+          <p>A static bolus sized from the meal, given 15 minutes early, cancels most of the disturbance before the sensor sees it.
+            Same meal, same controller, a different outcome.</p>
+          <div class="metrics" id="ch-ff-metrics"></div>
+          <button type="button" class="linkbtn" data-goto="simulator">Compare in the simulator →</button>
+        </div>
+        <div class="story-visual"><svg id="ch-ff-svg" class="story-svg" viewBox="0 0 480 260" role="img" aria-label="Glucose with feedback only versus a 15-minute pre-bolus"></svg></div>
+      </article>
+      <article class="story alt reveal" id="ch-stab">
+        <div class="story-copy">
+          <p class="eyebrow">Chapter 4</p>
+          <h3 class="ov-headline">Delay sets the limit.</h3>
+          <p>Every minute of sensor delay costs phase. The continuous-time margin says how much delay the loop could tolerate; the
+            sampled loop, simulated by the Python reference, tolerates less.</p>
+          <div class="metrics" id="ch-stab-metrics"></div>
+          <button type="button" class="linkbtn" data-goto="design">Open the stability analysis →</button>
+        </div>
+        <div class="story-visual"><svg id="ch-stab-svg" class="story-svg" viewBox="0 0 480 260" role="img" aria-label="Sensor delay compared with the tolerable delay"></svg></div>
+      </article>
+    </div>
+
+    <!-- D. Explore the organ -->
+    <div class="ov-block reveal" id="organ">
+      <p class="eyebrow">Explore the organ</p>
+      <h3 class="ov-headline">The process being controlled.</h3>
+      <p class="ov-sub">Drag to turn the pancreas. Use the tools to look inside, isolate the duct, or show the duodenum it sits against.</p>
+      <div class="viewer" id="organ-viewer">
+        <div class="viewer-rail" role="toolbar" aria-label="3D view tools">
+          <button type="button" class="tool" data-tool="rotate" aria-pressed="true" title="Rotate"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 12a8 8 0 1 1-2.3-5.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20.2 4v3.8h-3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Rotate</span></button>
+          <button type="button" class="tool" data-tool="zoom-in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5M11 8v6M8 11h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Zoom in</span></button>
+          <button type="button" class="tool" data-tool="zoom-out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5M8 11h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Zoom out</span></button>
+          <button type="button" class="tool" data-tool="wireframe" aria-pressed="false" title="Wireframe"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Wireframe</span></button>
+          <button type="button" class="tool" data-tool="section" aria-pressed="false" title="Cross-section"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 8l8-4 8 4v8l-8 4-8-4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 4v16" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.2 2"/></svg><span>Cross-section</span></button>
+          <button type="button" class="tool" data-tool="isolate" aria-pressed="false" title="Isolate duct"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 13c3-1 4-5 8-5s5 4 10 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="11" cy="8" r="1.6" fill="currentColor"/></svg><span>Isolate duct</span></button>
+          <button type="button" class="tool" data-tool="context" aria-pressed="false" title="Duodenum"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 5c-3 2-3 9 1 11s8 1 9-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M11 9c2 0 6 0 8 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Duodenum</span></button>
+          <button type="button" class="tool" data-tool="reset" title="Reset"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12a8 8 0 1 0 2.3-5.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M3.8 4v3.8h3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Reset</span></button>
+        </div>
+        <div class="viewer-stage organ-stage" id="organ-stage" role="img" aria-label="Interactive 3D model of the pancreas from BodyParts3D anatomy data">
+          <p class="viewer-crumb" id="organ-crumb">Abdomen <span aria-hidden="true">›</span> Pancreas</p>
+        </div>
+        <aside class="viewer-info card" id="organ-info" aria-live="polite"></aside>
+      </div>
+      <p class="viewer-caption">Anatomy: BodyParts3D, © The Database Center for Life Science, CC BY-SA 2.1 Japan (Mitsuhashi et al., 2009). Islets are schematic, not anatomical data.</p>
+    </div>
+
+    <!-- E. Course concepts -->
+    <div class="ov-block reveal">
+      <p class="eyebrow">Course concepts</p>
+      <h3 class="ov-headline">Process control, start to finish.</h3>
+      <div class="concepts">
+        <div class="concept"><h4>Modelling</h4><ul class="clean">
+          <li>Nonlinear ODE model, deviation variables, steady state (Ch. 2, 4)</li>
+          <li>Linearization, state space, transfer functions, poles (Ch. 4, 6)</li>
+          <li>Model reduction: half rule; FOPDT / SOPDT fits (Ch. 6, 7)</li></ul></div>
+        <div class="concept"><h4>Analysis</h4><ul class="clean">
+          <li>Frequency response: Bode, Nyquist, gain and phase margins, delay margin (Ch. 13–14)</li>
+          <li>Sensor dynamics, sampling, faults; model–plant mismatch (Ch. 9, 17)</li></ul></div>
+        <div class="concept"><h4>Control design</h4><ul class="clean">
+          <li>IMC-based PID tuning, τ<sub>c</sub> as the one tuning knob (Ch. 12)</li>
+          <li>Feedforward control: ideal (improper) vs static; meal bolus as a feedforward pulse (Ch. 15)</li>
+          <li>Model predictive control, shown as precomputed results only (Ch. 20, 23)</li></ul></div>
+        <div class="concept"><h4>Implementation</h4><ul class="clean">
+          <li>Discrete PID, derivative filter, derivative on measurement, set-point weighting (Ch. 8, 17)</li>
+          <li>Actuator saturation and integral windup: clamping vs back-calculation (Ch. 8)</li></ul></div>
+      </div>
+    </div>
+
+    <!-- F. AI story -->
+    <div class="ov-block ai-strip reveal">
+      <div>
+        <p class="eyebrow">How it was built</p>
+        <h3 class="ov-headline">An AI project, checked by numbers.</h3>
+        <p>One AI model (Claude) wrote the plan; a different model (Gemini) critiqued it; the student accepted or rejected each
+          critique point; the final plan was then built <em>independently</em> by two models into two websites. Both builds are
+          graded by the same tests against values produced by an independent Python reference implementation, so the comparison
+          is about numbers, not impressions. This page is the Claude build.</p>
+        <button type="button" class="linkbtn" data-goto="ai">See the AI workflow →</button>
+      </div>
+      <ol class="ai-steps" aria-label="AI workflow stages">
+        <li><span>Plan</span>Claude</li><li><span>Critique</span>Gemini</li><li><span>Decisions</span>Student</li>
+        <li><span>Two builds</span>Claude · Gemini</li><li><span>Tests</span>Python reference</li>
+      </ol>
+    </div>
+    <p class="scope-note reveal"><b>Scope.</b> Math stays at a 3rd/4th-year undergraduate process-control level. No drug names,
       carbohydrate ratios, correction factors or dosing guidance appear anywhere. Every number comes from Seborg Ex. 23.3,
-      a cited source, or the Python reference (labelled).</p></div>
+      a cited source, or the Python reference (labelled).</p>
+
+    <!-- G. Call to action -->
+    <div class="ov-cta reveal">
+      <h3>Now close the loop yourself.</h3>
+      <button type="button" class="btn primary btn-lg" data-goto="simulator">Open the simulator</button>
+    </div>
   </section>
 
   <!-- 2. SIMULATOR -->
@@ -197,7 +313,13 @@
     <div class="placeholder" style="text-align:left"><span class="tag">Placeholder list: to be completed</span>
       <p>Sources cited by the parameters in <code>js/data.js</code> (items marked [TO VERIFY] are not yet checked against the original):</p>
       <ul class="clean" id="ref-list"></ul>
-      <p>Software: Plotly.js 2.35.2 (charts), KaTeX 0.16.11 (equations).</p>
+      <p>Software: Plotly.js 2.35.2 (charts), KaTeX 0.16.11 (equations), three.js 0.170.0 (3D viewer, MIT licence).</p>
+      <p>3D anatomy (Overview): BodyParts3D, &copy; The Database Center for Life Science, licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en">CC Attribution-Share Alike 2.1 Japan</a>.
+        Mitsuhashi N, Fujieda K, Tamura T, Kawamoto S, Takagi T, Okubo K. BodyParts3D: 3D structure database for anatomical
+        concepts. <i>Nucleic Acids Res.</i> 2009;37(Database issue):D782&ndash;5. doi:10.1093/nar/gkn613.
+        Adapted (merged, re-centred, smoothed; schematic islet points added) by <code>tools/build_pancreas_mesh.mjs</code>; the
+        adapted mesh in <a href="models/LICENSE-BodyParts3D.txt">site/models/</a> is shared under the same licence.</p>
       <h3>Contributions</h3>
       <p>Individual project. Contributions will be listed here (student: direction, decisions and review; AI models: as documented on the AI Workflow tab).</p>
     </div>
@@ -231,7 +353,7 @@
         <li><a href="https://github.com/BE-aa8/PD-C">Source code and tests (GitHub)</a></li>
         <li><a href="gemini/">Gemini comparison build (frozen)</a></li>
         <li>Model: Seborg, Edgar, Mellichamp &amp; Doyle, <em>Process Dynamics and Control</em>, 4th ed., Ex. 23.3</li>
-        <li>Built with Plotly 2.35.2 and KaTeX 0.16.11 · Inter and Manrope fonts (SIL OFL) · hosted on GitHub Pages</li>
+        <li>Built with Plotly 2.35.2, KaTeX 0.16.11 and three.js 0.170.0 · 3D anatomy: BodyParts3D (CC BY-SA 2.1 JP) · Inter and Manrope fonts (SIL OFL) · hosted on GitHub Pages</li>
       </ul>
     </div>
   </div>
