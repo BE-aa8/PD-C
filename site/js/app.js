@@ -31,7 +31,18 @@ function renderTex(root) {
     if (HAS_KATEX) window.katex.render(tex, el, { throwOnError: false, displayMode: display });
     else el.textContent = tex;
   });
+  requestAnimationFrame(() => markScrollable(root));
 }
+// an equation wider than its box scrolls sideways; make exactly those keyboard-focusable (WCAG: scrollable regions)
+function markScrollable(root) {
+  root.querySelectorAll('.eq').forEach((el) => {
+    const over = el.scrollWidth > el.clientWidth + 1;
+    if (over && !el.hasAttribute('tabindex')) el.tabIndex = 0;
+    else if (!over && el.hasAttribute('tabindex')) el.removeAttribute('tabindex');
+  });
+}
+let markTimer = 0;
+window.addEventListener('resize', () => { clearTimeout(markTimer); markTimer = setTimeout(() => markScrollable(document), 200); });
 const T = (tex, display = true) => `<div class="eq" data-tex="${esc(tex)}"${display ? ' data-display' : ''}></div>`;
 const Ti = (tex) => `<span data-tex="${esc(tex)}"></span>`;
 function card({ title, tex, units, meaning, extra = '', id = '' }) {
@@ -127,6 +138,7 @@ const PRESETS = [
   { id: 'suspend', label: 'Pre-bolus 15 + integral suspended (bolus + 60 min)', s: { ff_enabled: true, t_pre: 15, suspend_integral: true, suspend_extra: 60 } },
 ];
 let state = { ...BASE };
+const STATE_REF = () => state; // for code that must snapshot the current settings (the live sweeps)
 
 function tuningOf(s) {
   return M.imcTuning({ model: s.model, tau_c: s.tau_c, theta_sensor: s.theta_design, Ts: 5, include_zoh: s.include_zoh });
@@ -440,11 +452,16 @@ function renderSimulator() {
   document.getElementById('sim-kpis').innerHTML = kp.map(([k, v, s, cls]) => `<div class="kpi ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="k">${esc(s)}</div></div>`).join('');
 
   // metrics table
+  // the equations never change: typeset them once, then only the value cells are updated (saves a KaTeX pass per input)
   const tbl = document.getElementById('metrics-table');
-  tbl.innerHTML = `<thead><tr><th>Metric</th><th>Value</th><th>Units</th><th>Equation</th><th>Meaning</th></tr></thead><tbody>${
-    METRIC_ROWS.map(([k, name, u, tex, mean, d]) => `<tr><td>${name}</td><td class="num">${fmt(m[k], d)}</td><td>${u}</td><td>${Ti(tex)}</td><td>${mean}</td></tr>`).join('')
-  }</tbody>`;
-  renderTex(tbl);
+  if (!tbl.dataset.built) {
+    tbl.innerHTML = `<thead><tr><th>Metric</th><th>Value</th><th>Units</th><th>Equation</th><th>Meaning</th></tr></thead><tbody>${
+      METRIC_ROWS.map(([k, name, u, tex, mean]) => `<tr><td>${name}</td><td class="num" data-k="${k}"></td><td>${u}</td><td>${Ti(tex)}</td><td>${mean}</td></tr>`).join('')
+    }</tbody>`;
+    renderTex(tbl);
+    tbl.dataset.built = 'true';
+  }
+  METRIC_ROWS.forEach(([k, , , , , d]) => { tbl.querySelector(`td[data-k="${k}"]`).textContent = fmt(m[k], d); });
 
   // P1
   const t = decimate(r.t), G = decimate(r.G), Gm = decimate(r.Gm), SP = decimate(r.sp);
@@ -473,6 +490,7 @@ function renderSimulator() {
 
   renderSaved();
   clearTimeout(sweepTimer);
+  sweepGen++; // cancels a sweep still running for the previous settings
   sweepTimer = setTimeout(renderSweeps, 150);
 }
 
@@ -496,8 +514,20 @@ function renderSaved() {
   document.getElementById('save-run').disabled = savedRuns.length >= 4;
 }
 
-function renderSweeps() {
+// The sweeps run one simulation per task and give the browser a turn in between, so a slider stays responsive while
+// they compute (about 25 simulations; on a slow phone that was one blocking task of up to ~1 s). A newer run cancels an
+// older one. Results are identical to computing them in one go.
+let sweepGen = 0;
+const yieldToBrowser = (() => {
+  if (globalThis.scheduler && typeof globalThis.scheduler.yield === 'function') return () => globalThis.scheduler.yield();
+  const ch = new MessageChannel(); const q = [];
+  ch.port1.onmessage = () => { const r = q.shift(); if (r) r(); };
+  return () => new Promise((r) => { q.push(r); ch.port2.postMessage(0); });
+})();
+async function renderSweeps() {
   if (activeTab !== 'simulator') { dirty.simulator = true; return; }
+  const gen = ++sweepGen;
+  const state = STATE_REF(); // snapshot of the settings this sweep belongs to
   const c = C();
   const base = inputsOf(state);
   // P10: IMC mode sweeps τc; manual mode sweeps Kc around the current value
@@ -510,6 +540,7 @@ function renderSweeps() {
     for (const k of xs) {
       const mm = M.metrics(M.simulate({ ...base, Kc: k }));
       pk.push(mm.peak); nd.push(mm.nadir);
+      await yieldToBrowser(); if (gen !== sweepGen) return;
     }
     xr = { title: { text: 'Kc (mU/min per mg/dL)' } };
     curX = state.Kc_man; curName = 'Current Kc';
@@ -519,6 +550,7 @@ function renderSweeps() {
       const tu = M.imcTuning({ model: state.model, tau_c: tc, theta_sensor: state.theta_design, Ts: 5, include_zoh: state.include_zoh });
       const mm = M.metrics(M.simulate({ ...base, Kc: tu.Kc, tauI: tu.tauI, tauD: tu.tauD }));
       pk.push(mm.peak); nd.push(mm.nadir);
+      await yieldToBrowser(); if (gen !== sweepGen) return;
     }
     xr = { title: { text: 'τc (min)' }, type: 'log', tickvals: [2, 5, 10, 20, 50, 100] };
     curX = state.tau_c; curName = 'Current τc';
@@ -545,6 +577,7 @@ function renderSweeps() {
   for (const tp of pres) {
     const mm = M.metrics(M.simulate({ ...base, ff_enabled: true, t_pre: tp }));
     pk2.push(mm.peak); nd2.push(mm.nadir);
+    await yieldToBrowser(); if (gen !== sweepGen) return;
   }
   const traces = [
     { x: pres, y: pk2, name: 'Peak (with bolus)', mode: 'lines+markers', line: { color: c.s2, width: 2 }, marker: { size: 8 } },
@@ -604,7 +637,7 @@ function buildTheory() {
   root.innerHTML = `<div class="doc-layout"><aside class="chapnav" id="theory-nav" aria-label="Theory chapters"></aside><div class="doc-body">
   <section class="chapter">${chapHead(c1.id, c1.num, c1.title, 'Three ordinary differential equations describe blood glucose, the remote insulin effect and plasma insulin. Every parameter comes from Seborg Ex. 23.3.')}
     <div id="th-ode"></div>
-    <div class="panel" style="margin-top:14px"><h3>Parameters (Seborg Ex. 23.3)</h3><div class="table-wrap"><table id="param-table"></table></div></div>
+    <div class="panel" style="margin-top:14px"><h3>Parameters (Seborg Ex. 23.3)</h3><div class="table-wrap" tabindex="0"><table id="param-table"></table></div></div>
   </section>
 
   <section class="chapter">${chapHead(c2.id, c2.num, c2.title, 'What the units say about the model, where the basal state sits, and why the pump can push glucose down much harder than it can let it rise.')}
@@ -807,7 +840,7 @@ function buildDesign() {
     <div class="diagram-frame">
       <div class="diagram-stage"><div class="diagram-scroll" id="block-diagram"></div>
         <ul class="diagram-legend" aria-label="Signal paths"><li class="lg-fb">feedback path</li><li class="lg-dist">meal disturbance</li><li class="lg-ff">feedforward</li></ul></div>
-      <aside class="diagram-info card" id="block-info" aria-live="polite"></aside>
+      <div class="diagram-info card" id="block-info" aria-live="polite"></div>
     </div>
   </section>
 
@@ -823,7 +856,7 @@ function buildDesign() {
       <div class="panel"><p class="chart-title">P7 · Nyquist plot of L(jω)</p><div id="p7" class="chart tall"></div>
         <p class="chart-cap">Stable if the curve does not encircle −1 (open loop is stable). The unit circle marks where |L| = 1.</p></div>
     </div>
-    <div class="callout"><h4>Sampled-data note</h4><p id="ds-sampled"></p></div>
+    <div class="callout"><h3 class="callout-h">Sampled-data note</h3><p id="ds-sampled"></p></div>
   </section>
 
   <section class="chapter">${chapHead(ch[7].id, ch[7].num, ch[7].title, 'Model predictive control, computed offline by the Python reference for the Ex. 23.6(e) setup, against the same PID.')}
@@ -976,7 +1009,7 @@ function paintDiagram() {
   bd.querySelectorAll('.wire').forEach((w) => w.classList.toggle('on', w.dataset.from === diagSel || w.dataset.to === diagSel));
   const b = diagInfo[diagSel];
   const el = document.getElementById('block-info');
-  el.innerHTML = `<div class="di-text"><p class="role">${esc(b.r)}</p><h4>${esc(b.t)}</h4><p class="meaning">${esc(b.p)}</p></div><div class="di-eqs">${b.tex.map((t) => T(t)).join('')}</div>`;
+  el.innerHTML = `<div class="di-text"><p class="role">${esc(b.r)}</p><h3>${esc(b.t)}</h3><p class="meaning">${esc(b.p)}</p></div><div class="di-eqs">${b.tex.map((t) => T(t)).join('')}</div>`;
   renderTex(el);
 }
 
@@ -1154,7 +1187,7 @@ function buildWorkflow() {
   const show = (id) => {
     const st = STAGES.find((x) => x.id === id);
     tl.querySelectorAll('.tl-step').forEach((b) => { const on = b.dataset.stage === id; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
-    document.getElementById('tl-panel').innerHTML = `<p class="role">Stage ${st.n} · ${esc(st.role)}</p><h4>${esc(st.title)}</h4>
+    document.getElementById('tl-panel').innerHTML = `<p class="role">Stage ${st.n} · ${esc(st.role)}</p><h3>${esc(st.title)}</h3>
       <p class="tl-by">By ${esc(st.who)}</p><ul class="clean tl-facts">${st.facts.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
       ${st.quote ? `<blockquote class="tl-quote"><p>“${esc(st.quote.q)}”</p><footer>Andrew, prompt ${st.quote.n} (verbatim)</footer></blockquote>` : ''}
       <p class="tl-ev"><span>Evidence:</span> ${st.evidence.map(docLink).join(' · ')}</p>`;
@@ -1403,7 +1436,7 @@ function initOrganUI() {
   const rail = document.querySelector('#organ-viewer .viewer-rail');
   rail.addEventListener('click', (e) => {
     const b = e.target.closest('.tool');
-    if (!b || !OV.organ) return;
+    if (!b || !OV.organ || b.getAttribute('aria-disabled') === 'true') return;
     const t = b.dataset.tool;
     if (t === 'zoom-in') OV.organ.zoom(0.85);
     else if (t === 'zoom-out') OV.organ.zoom(1 / 0.85);
@@ -1421,7 +1454,7 @@ const FORCE_3D = new URLSearchParams(location.search).get('3d') === 'force';
 let pancreasMod = null;
 const loadPancreas = () => (pancreasMod ??= import('./pancreas.js'));
 function setRail(enabled) {
-  document.querySelectorAll('#organ-viewer .tool').forEach((b) => { b.disabled = !enabled; });
+  document.querySelectorAll('#organ-viewer .tool').forEach((b) => { b.setAttribute('aria-disabled', String(!enabled)); });
 }
 async function initViewers() {
   if (OV.active) return;
@@ -1566,6 +1599,7 @@ function showTab(tab, focus = false, user = false) {
   renderTab(tab);
   document.body.dataset.tab = tab;
   if (tab === 'overview') initViewers(); else stopViewers();
+  requestAnimationFrame(() => markScrollable(document.getElementById(`panel-${tab}`)));
   if (HAS_PLOTLY) document.querySelectorAll(`#panel-${tab} .js-plotly-plot`).forEach((el) => window.Plotly.Plots.resize(el));
 }
 
@@ -1630,6 +1664,13 @@ function init() {
   });
   document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => { showTab(b.dataset.goto, false, true); window.scrollTo(0, 0); }));
   window.addEventListener('hashchange', () => showTab(location.hash.slice(1), false, true));
+  // skip link: focus the main content without touching the hash (the hash names the open tab)
+  document.querySelector('.skip-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    const main = document.getElementById('main');
+    main.focus({ preventScroll: true });
+    main.scrollIntoView({ block: 'start' });
+  });
   // top bar: hairline once the page scrolls; indicator follows layout changes
   const header = document.getElementById('site-header');
   let ticking = false;

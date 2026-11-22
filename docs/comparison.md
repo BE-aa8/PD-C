@@ -148,6 +148,9 @@ Later changes to Claude's site (listed so the comparison stays honest):
 - Redesign Phase 6 (`docs/plan-redesign-phase6-claude.md`): the AI Workflow, Video & Transcript and References tabs
   filled from the project records (this comparison's numbers appear there as a summary table with sources); Andrew's
   conclusions remain a placeholder for him to write.
+- Redesign Phase 7 (`docs/plan-redesign-phase7-claude.md`): accessibility (axe-core: 0 violations on every tab, both
+  themes, desktop and phone; now a CI test), deferred chart/equation libraries (first paint ≈ 4× faster on a throttled
+  phone), sweeps that no longer block sliders, dead CSS removed, link preview and favicon. Presentation only.
 
 ## 6. Process lessons
 - **"Renders" is not "correct":** the smoke test checks that each chart has an SVG, so a chart with no data passes.

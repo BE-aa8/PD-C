@@ -6,6 +6,15 @@
   <title>Closing the Loop</title>
   <meta name="description" content="Interactive process-control simulator of an artificial pancreas (Seborg Ex. 23.3 / Exercise 23.6). Educational model of an illustrative textbook patient. Not medical advice.">
   <meta name="color-scheme" content="dark light">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23141a17'/%3E%3Cpath d='M18 12a6 6 0 1 1-1.8-4.3' fill='none' stroke='%23A6C58C' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M18.4 5.2v3.4H15' fill='none' stroke='%23A6C58C' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='12' cy='12' r='2' fill='%23A6C58C'/%3E%3C/svg%3E">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Closing the Loop: an artificial-pancreas control simulator">
+  <meta property="og:description" content="Interactive process-control simulator (Seborg Ex. 23.3 / Exercise 23.6), built and compared with two AI models. Educational model of an illustrative textbook patient. Not medical advice.">
+  <meta property="og:url" content="https://be-aa8.github.io/PD-C/">
+  <meta property="og:image" content="https://be-aa8.github.io/PD-C/og-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <script>
     /* Theme before first paint: dark is the default; ?theme=light|dark or a saved choice overrides it. */
     (function () {
@@ -20,8 +29,9 @@
   <link rel="preload" href="fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
   <link rel="stylesheet" href="css/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+  <!-- deferred: they no longer block the first paint; the module app.js still runs after both (document order) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
   <script type="importmap">
     { "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
@@ -30,6 +40,7 @@
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header" id="site-header">
   <div class="wrap topbar">
     <a class="wordmark" href="#overview" aria-label="Closing the Loop: back to the overview"><svg class="loop-glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19.8 3.6v3.7h-3.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg><span>Closing the Loop</span></a>
@@ -47,13 +58,13 @@
     </button>
   </div>
 </header>
-<div class="disclaimer-strip">
+<aside class="disclaimer-strip" aria-label="Disclaimer">
   <div class="wrap">
     <p class="disclaimer" role="note"><svg class="note-glyph" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="4.9" r=".95" fill="currentColor"/></svg><strong>Educational process-control model of an illustrative textbook patient. Not medical advice. Not for dosing decisions.</strong></p>
   </div>
-</div>
+</aside>
 
-<main class="wrap">
+<main class="wrap" id="main" tabindex="-1">
   <h1 class="sr-only">Closing the Loop: an artificial-pancreas control simulator</h1>
   <noscript><p class="warn">This site needs JavaScript for the simulator, charts, and equations.</p></noscript>
   <div id="lib-warning" class="warnings"></div>
@@ -162,7 +173,7 @@
           <button type="button" class="tool" data-tool="context" aria-pressed="false" title="Duodenum"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 5c-3 2-3 9 1 11s8 1 9-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M11 9c2 0 6 0 8 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Duodenum</span></button>
           <button type="button" class="tool" data-tool="reset" title="Reset"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12a8 8 0 1 0 2.3-5.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M3.8 4v3.8h3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Reset</span></button>
         </div>
-        <div class="viewer-stage organ-stage" id="organ-stage" role="img" aria-label="Interactive 3D model of the pancreas from BodyParts3D anatomy data">
+        <div class="viewer-stage organ-stage" id="organ-stage" role="group" aria-label="Interactive 3D model of the pancreas from BodyParts3D anatomy data">
           <p class="viewer-crumb" id="organ-crumb">Abdomen <span aria-hidden="true">›</span> Pancreas</p>
           <img class="viewer-still" src="models/pancreas-viewer.webp" alt="" width="1480" height="920" loading="lazy" decoding="async">
           <div class="viewer-start" id="organ-start">
@@ -298,7 +309,7 @@
         <section class="ws-section" aria-labelledby="met-h">
           <details class="disclosure" id="metrics-details" open>
             <summary><span class="eyebrow">Detailed metrics</span><span id="met-h" class="disc-title">12 measures, each with its equation, units and meaning</span></summary>
-            <div class="panel"><div class="table-wrap"><table id="metrics-table"></table></div></div>
+            <div class="panel"><div class="table-wrap" tabindex="0"><table id="metrics-table"></table></div></div>
           </details>
         </section>
         <div class="callout"><h4>Why real systems are harder</h4><ul class="clean">
@@ -313,16 +324,16 @@
   <!-- 3. THEORY -->
   <section role="tabpanel" id="panel-theory" aria-labelledby="tab-theory" hidden>
     <p class="eyebrow">03 — Theory</p>
-    <h2>Theory: model, linearization, reduction, feedforward</h2>
-    <p class="lead">Every card shows the equation, its units, and what it means physically. Numbers are computed live from the Seborg Ex. 23.3 parameters.</p>
+    <h2>Theory</h2>
+    <p class="lead">The model, its linearization and reduction, and feedforward. Every card shows the equation, its units, and what it means physically; numbers are computed live from the Seborg Ex. 23.3 parameters.</p>
     <div id="theory-cards"></div>
   </section>
 
   <!-- 4. CONTROL DESIGN -->
   <section role="tabpanel" id="panel-design" aria-labelledby="tab-design" hidden>
     <p class="eyebrow">04 — Control Design</p>
-    <h2>Control design: IMC tuning, block diagram, stability margins</h2>
-    <p class="lead">These settings are shared with the Simulator tab: change τ<sub>c</sub> here and the simulator follows.</p>
+    <h2>Control design</h2>
+    <p class="lead">IMC tuning, the block diagram and the stability margins. These settings are shared with the Simulator tab: change τ<sub>c</sub> here and the simulator follows.</p>
     <div id="design-cards"></div>
   </section>
 
@@ -341,13 +352,13 @@
       <div id="ai-dec-summary" class="dec-summary"></div>
       <details class="disclosure" id="ai-dec-details">
         <summary><span class="disc-title">Show all 26 rows with the reasoning</span></summary>
-        <div class="panel"><div class="table-wrap"><table id="ai-dec-table" class="dec-table"></table></div></div>
+        <div class="panel"><div class="table-wrap" tabindex="0"><table id="ai-dec-table" class="dec-table"></table></div></div>
       </details>
     </section>
     <section class="ai-sec" aria-labelledby="ai-cmp-h">
       <p class="eyebrow">Comparison</p>
       <h3 id="ai-cmp-h">Claude vs Gemini, same prompt and tests</h3>
-      <div class="panel"><div class="table-wrap"><table id="ai-cmp-table" class="cmp-table"></table></div>
+      <div class="panel"><div class="table-wrap" tabindex="0"><table id="ai-cmp-table" class="cmp-table"></table></div>
         <p class="chart-cap">Selected rows from the full comparison (setup held equal, fairness caveats, every source):
           <a id="ai-cmp-link" href="#">docs/comparison.md</a>. Claude wrote the comparison and built one of the two sites, so every row cites its source.</p></div>
       <div class="gemini-card">
@@ -378,6 +389,7 @@
   <section role="tabpanel" id="panel-video" aria-labelledby="tab-video" hidden>
     <p class="eyebrow">06 — Video &amp; Transcript</p>
     <h2>Video &amp; Transcript</h2>
+    <p class="lead">The recorded presentation, with its verbatim YouTube auto-generated transcript below it.</p>
     <div class="video-layout">
       <div class="video-stage" id="video-stage"></div>
       <aside class="video-meta">
@@ -435,7 +447,7 @@
       </ol></div></section>
     <section class="ref-group" aria-labelledby="ref-h4"><p class="ref-num">04</p><div>
       <h3 id="ref-h4">AI contributions</h3>
-      <div class="table-wrap"><table class="ai-table" id="ref-ai"></table></div>
+      <div class="table-wrap" tabindex="0"><table class="ai-table" id="ref-ai"></table></div>
       <p class="chart-cap">Details, prompts and decisions: the AI Workflow tab and <a id="ref-log-link" href="#">docs/process-log.md</a>.</p></div></section>
     <section class="ref-group" aria-labelledby="ref-h5"><p class="ref-num">05</p><div>
       <h3 id="ref-h5">Project contributions</h3>
@@ -466,7 +478,7 @@
       <p class="foot-disclaimer"><strong>Educational process-control model of an illustrative textbook patient. Not medical advice. Not for dosing decisions.</strong></p>
     </div>
     <div class="foot-col">
-      <h4>Explore</h4>
+      <h2 class="foot-h">Explore</h2>
       <ul class="foot-links">
         <li><button type="button" class="linklike" data-goto="overview">Overview</button></li>
         <li><button type="button" class="linklike" data-goto="simulator">Simulator</button></li>
@@ -478,7 +490,7 @@
       </ul>
     </div>
     <div class="foot-col">
-      <h4>Project</h4>
+      <h2 class="foot-h">Project</h2>
       <ul class="foot-links">
         <li><a href="https://github.com/BE-aa8/PD-C">Source code and tests (GitHub)</a></li>
         <li><a href="gemini/">Gemini comparison build (frozen)</a></li>

@@ -100,6 +100,14 @@ jobs:
           sleep 2
           node tests/browser-content.mjs --base http://localhost:8001 | tee -a "$GITHUB_STEP_SUMMARY"
           node tests/browser-content.mjs --base http://localhost:8001 --theme light | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Accessibility test of Claude's site (axe-core; fails on serious/critical), dark + light
+        if: steps.has_site.outputs.run == 'true' && hashFiles('tests/browser-a11y.mjs') != ''
+        run: |
+          set -o pipefail
+          python3 -m http.server 8002 -d site >/dev/null 2>&1 &
+          sleep 2
+          node tests/browser-a11y.mjs --base http://localhost:8002 | tee -a "$GITHUB_STEP_SUMMARY"
+          node tests/browser-a11y.mjs --base http://localhost:8002 --theme light | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Job summary
         if: always() && steps.has_site.outputs.run == 'true'
         run: '[ -f smoke-results/report.md ] && cat smoke-results/report.md smoke-results/dark/report.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true'
@@ -190,6 +198,14 @@ jobs:
           set -o pipefail
           node tests/browser-content.mjs --base "$BASE" | tee -a "$GITHUB_STEP_SUMMARY"
           node tests/browser-content.mjs --base "$BASE" --theme light | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Accessibility test on the live site (dark + light)
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          BASE="${PAGE_URL%/}"
+          set -o pipefail
+          node tests/browser-a11y.mjs --base "$BASE" | tee -a "$GITHUB_STEP_SUMMARY"
+          node tests/browser-a11y.mjs --base "$BASE" --theme light | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Job summary
         if: always()
         run: |

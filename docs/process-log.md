@@ -435,3 +435,28 @@ On a software renderer, live 3D stays slow by nature; the difference is that it 
 **Still needed from Andrew:** record and publish the video, then paste the YouTube id and the verbatim auto-generated transcript into `site/js/video.js`; write the two "To be written by Andrew" sections (and "My conclusions" in `docs/comparison.md`); check the [TO VERIFY] items against the textbook.
 
 **Next step:** Andrew reviews the three tabs on the live site; then Phase 7 (polish) from the master plan.
+
+### Part 22: redesign Phase 7 (final polish and validation)
+
+**Prompt (verbatim):** 37. "start phase 7". Claude planned in plan mode (audit first, fixes second); Andrew approved `docs/plan-redesign-phase7-claude.md`.
+
+**Audit and fixes (measured before and after):**
+
+| Area | Found (before) | Fix | After |
+|---|---|---|---|
+| Accessibility (axe-core 4.10.2, 7 tabs × desktop/phone) | Dark: 6 serious findings; light: 12. Primary buttons, pressed toggles and the phone Controls button had white text on the light accent below 4.5:1; the organ viewer was labelled as an image while containing buttons; 30+ wide equations and tables scrolled sideways but could not be reached by keyboard; the viewer tool rail was unreachable while its buttons were disabled; plus moderate findings (heading levels skipped, an `aside` nested in `main`, the disclaimer strip outside any landmark) | a darker solid accent behind white text in light mode (≈ 6:1, same hue); the viewer stage became a labelled group; scrollable equations and tables became focusable only when they actually overflow; tools use `aria-disabled` and stay focusable; heading levels fixed; the disclaimer strip is a labelled landmark; a "Skip to content" link | **0 violations of any severity** in both themes, desktop and phone |
+| First paint (phone, 4× CPU throttle, median of 3) | 1.01 s: Plotly (~3.6 MB) and KaTeX blocked rendering in `<head>` | both scripts deferred (the module `app.js` still runs after them) | **0.23 s** |
+| Slider response on the Simulator (τc, 10 steps) | median 353 ms per move; the metrics table re-typeset its 12 static equations on every move (≈ 33 ms) | the table's equations are typeset once; only the numbers update | median **271 ms** |
+| Live sweeps (≈ 25 simulations after a move) | one blocking task per chart, up to 0.7–0.96 s, so the slider froze while they ran | one simulation per task with a yield in between; a newer move cancels an older sweep; results identical | longest blocking task ≈ **0.3–0.55 s** (now the per-move render, not the sweeps) |
+| Reduced motion | checked: nothing animates on any tab | — | test added |
+| Dead CSS | 11 rules for components replaced in earlier phases (old diagram, placeholder panel, old section headings, an unused hint) | removed after a selector-usage check | — |
+| Consistency (screenshot matrix: 7 tabs × 4 widths × 2 themes) | Theory and Control Design titles ran to three lines; the Video page had no lead line | short titles ("Theory", "Control design") with the detail moved into the lead; a lead added to Video | reviewed |
+| Sharing | no favicon (a 404 on every load), no link preview | an inline SVG favicon (the loop glyph); Open Graph/Twitter meta with a 1200 × 630 preview of the Overview hero, disclaimer included (`tools/render_og_preview.mjs`) | — |
+
+Measurements are from local headless Chromium with the CDN files served from local copies (CPU throttled, no network throttling); they compare before and after on the same machine, not real-device timings.
+
+**Tests added:** `tests/browser-a11y.mjs` (axe-core loaded from jsDelivr at test time, no new dependency; all 7 tabs, desktop and phone; fails on serious or critical findings; the only exclusions are Plotly's generated SVG internals and KaTeX's hidden MathML, listed in the file with the reason), run in CI on the local build and on the live site, both themes. Content test (now 77 checks): with reduced motion nothing animates; the skip link is the first keyboard stop and focuses the main content without changing the open tab; Plotly and KaTeX are deferred and still load; the preview image and favicon are present.
+
+**Results (local):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light`, `/gemini/` (device light and dark); content test 77/77 in both themes; accessibility test 0 serious/critical (0 of any kind) in both themes; extended check clean; screenshot matrix reviewed.
+
+**Status:** all seven phases of ChatGPT's redesign brief are done. Still Andrew's: the video and transcript, the "To be written by Andrew" sections, "My conclusions", and the [TO VERIFY] checks.

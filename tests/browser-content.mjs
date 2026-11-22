@@ -117,7 +117,7 @@ const blocks = await page.locator('#block-diagram .blk').evaluateAll((els) => el
 const seen = new Set();
 for (const k of blocks) {
   await page.locator(`#block-diagram .blk[data-k="${k}"]`).click();
-  seen.add((await page.locator('#block-info h4').innerText()).trim());
+  seen.add((await page.locator('#block-info h3').innerText()).trim());
 }
 check('Each diagram block opens its own details', blocks.length >= 7 && seen.size === blocks.length && (await page.locator('#block-info .katex').count()) > 0, `${blocks.length} blocks, ${seen.size} titles`);
 await page.locator('#block-diagram .blk[data-k="ctrl"]').click();
@@ -153,7 +153,7 @@ const stagesUI = await page.locator('#ai-timeline .tl-step').evaluateAll((els) =
 const stageTitles = new Set();
 for (const id of stagesUI) {
   await page.locator(`#ai-timeline .tl-step[data-stage="${id}"]`).click();
-  stageTitles.add((await page.locator('#tl-panel h4').innerText()).trim());
+  stageTitles.add((await page.locator('#tl-panel h3').innerText()).trim());
 }
 check('AI timeline: 7 stages, each opens its own details', stagesUI.length === 7 && stageTitles.size === 7, `${stagesUI.length} stages, ${stageTitles.size} titles`);
 const wf = await page.evaluate(async () => import(new URL('js/workflow.js', location.href)).then((m) => ({ STAGES: m.STAGES, PROMPTS: m.PROMPTS, DECISIONS: m.DECISIONS })));
@@ -331,7 +331,7 @@ if (heroLive) {
 const phX = async () => ov.locator('#hero-ph').getAttribute('x1');
 const x0 = await phX(); await ov.waitForTimeout(700);
 check('Hero glucose playhead animates', x0 !== (await phX()), `${x0} → ${await phX()}`);
-check('Viewer tools disabled until the viewer starts', await ov.locator('.tool[data-tool="wireframe"]').isDisabled(), '');
+check('Viewer tools disabled until the viewer starts', (await ov.locator('.tool[data-tool="wireframe"]').getAttribute('aria-disabled')) === 'true', '');
 await ov.close();
 
 // 6b. Live viewer (?3d=force skips the hardware check, as "Try anyway" does): tap to start, one GPU context at a time,
@@ -398,6 +398,36 @@ check('No WebGL: still image and a notice, viewer not offered', (await ng.locato
 check('No WebGL: chapters still render', (await ng.locator('#ch-late-metrics .metric').count()) === 3, '');
 check('No page errors (no WebGL)', ngErrors.length === 0, ngErrors.join(' | '));
 await nctx.close();
+
+// 8. Polish (redesign Phase 7): reduced motion, skip link, deferred libraries, link preview
+const rm = await browser.newPage({ colorScheme: SCHEME, viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
+await setup(rm);
+await rm.goto(`${BASE}/${Q}#overview`, { waitUntil: 'networkidle' });
+await rm.waitForTimeout(1500);
+let moving = [];
+for (const tab of ['overview', 'simulator', 'design', 'ai']) {
+  await rm.click(`#tab-${tab}`);
+  await rm.waitForTimeout(900);
+  const n = await rm.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running').length);
+  if (n) moving.push(`${tab}: ${n}`);
+}
+check('Reduced motion: nothing animates', moving.length === 0, moving.join(', '));
+await rm.reload({ waitUntil: 'networkidle' }); // fresh page (same URL, #ai): keyboard focus starts at the top
+await rm.waitForTimeout(500);
+await rm.keyboard.press('Tab');
+const firstFocus = await rm.evaluate(() => document.activeElement.className);
+await rm.keyboard.press('Enter');
+await rm.waitForTimeout(200);
+check('Skip link is the first stop and focuses <main> (tab unchanged)', firstFocus.includes('skip-link') && (await rm.evaluate(() => document.activeElement.id)) === 'main' && (await rm.evaluate(() => location.hash)) === '#ai', `first: ${firstFocus}`);
+const deferred = await rm.evaluate(() => [...document.querySelectorAll('script[src*="plotly"], script[src*="katex"]')].map((x) => x.defer));
+check('Plotly and KaTeX load deferred (charts and equations still render)', deferred.length === 2 && deferred.every(Boolean) && (await rm.evaluate(() => !!document.querySelector('#panel-ai') && typeof window.Plotly !== 'undefined' && typeof window.katex !== 'undefined')), JSON.stringify(deferred));
+const og = await rm.evaluate(async () => {
+  const meta = document.querySelector('meta[property="og:image"]').content;
+  const r = await fetch(new URL('og-preview.png', location.href));
+  return { meta, ok: r.ok, icon: !!document.querySelector('link[rel="icon"]') };
+});
+check('Link preview image and favicon present', og.ok && og.meta.endsWith('/og-preview.png') && og.icon, JSON.stringify(og));
+await rm.close();
 await browser.close();
 
 const failed = results.filter((r) => !r.ok);
