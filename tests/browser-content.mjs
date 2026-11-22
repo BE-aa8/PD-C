@@ -163,7 +163,9 @@ check('Every evidence link points to a file in the repository', evPaths.length >
 const logTxt = readFileSync(join(ROOT, 'docs/process-log.md'), 'utf8');
 const quotes = [...wf.PROMPTS.map((x) => x.q), ...wf.STAGES.filter((st) => st.quote).map((st) => st.quote.q)];
 const notFound = quotes.filter((q) => !logTxt.includes(q));
-check('Every quoted prompt appears verbatim in docs/process-log.md', quotes.length >= 10 && notFound.length === 0, notFound.map((q) => q.slice(0, 40)).join(' | ') || `${quotes.length} quotes`);
+check('Every quoted prompt appears verbatim in docs/process-log.md', quotes.length >= 8 && notFound.length === 0, notFound.map((q) => q.slice(0, 40)).join(' | ') || `${quotes.length} quotes`);
+const aiText = await page.locator('#panel-ai').evaluate((el) => el.textContent);
+check('Prompts 14, 25 and 32 are not shown (removed at Andrew\'s request)', !/Budget \$20 send it|hugging face spaces|3d model pancreas is a dead set/i.test(aiText) && !wf.PROMPTS.some((x) => [14, 25, 32].includes(x.n)), '');
 const mdRows = readFileSync(join(ROOT, 'docs/critique-decisions.md'), 'utf8').split('\n').filter((l) => /^\| \d+ \|/.test(l));
 const mdDec = mdRows.map((l) => l.split(' | ')[3].replace(/\*\*/g, '').trim());
 const uiDec = await page.locator('#ai-dec-table tbody tr td:nth-child(4)').allTextContents(); // inside a closed disclosure: textContent

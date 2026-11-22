@@ -204,10 +204,7 @@ export const STAGES = [
    "Andrew overrode the notes on one point: the interactive 3D pancreas, built from BodyParts3D anatomy data and driven by the simulation.",
    "The engine and every equation, unit and test stayed unchanged; the content test grew with each phase."
   ],
-  "quote": {
-   "n": 32,
-   "q": "the 3d model pancreas is a dead set. I 100% NEED that on the website hehehehe."
-  },
+  "quote": null,
   "evidence": [
    {
     "label": "Redesign brief (verbatim)",
@@ -246,29 +243,14 @@ export const PROMPTS = [
   "ctx": "Gemini plan stage (Part 6): the model choice for the Gemini build."
  },
  {
-  "n": 14,
-  "q": "Budget $20 send it",
-  "ctx": "Gemini plan stage (Part 6): budget for the Gemini runs raised from $6 to $20."
- },
- {
   "n": 20,
   "q": "Put the charts above the controls on mobile",
   "ctx": "Claude build (Part 9): the one layout request after the build."
  },
  {
-  "n": 25,
-  "q": "can I use hugging face spaces to host the website? I am going to run out of credit if I keep redeploying on Netlify",
-  "ctx": "Hosting (Part 12): led to GitHub Pages, deployed by CI after the tests pass."
- },
- {
   "n": 27,
   "q": "I like Claude version better, lets move forward with only its version currently.",
   "ctx": "Selection (Part 13): continue with Claude's build; Gemini's stays frozen at /gemini/."
- },
- {
-  "n": 32,
-  "q": "before starting phase three, take note of these, well, notes. I gave ChatGPT 4 screen recordings of website layouts that I particularly liked. the 3d model pancreas is a dead set. I 100% NEED that on the website hehehehe. anyways:",
-  "ctx": "Redesign (Part 17): the 3D pancreas, required by Andrew over ChatGPT's notes that called it optional."
  },
  {
   "n": 34,

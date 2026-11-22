@@ -460,3 +460,9 @@ Measurements are from local headless Chromium with the CDN files served from loc
 **Results (local):** `npm test` 65/65; smoke test 0 failures on `/`, `/?theme=light`, `/gemini/` (device light and dark); content test 77/77 in both themes; accessibility test 0 serious/critical (0 of any kind) in both themes; extended check clean; screenshot matrix reviewed.
 
 **Status:** all seven phases of ChatGPT's redesign brief are done. Still Andrew's: the video and transcript, the "To be written by Andrew" sections, "My conclusions", and the [TO VERIFY] checks.
+
+### Part 23: three prompts removed from the website
+
+**Prompt (verbatim):** 38. "remove prompts 14, 25, 32 from website." Answer to Claude's question on prompt 32, which also appeared as the quote in timeline stage 7: "Remove both (Recommended)".
+
+**What changed:** the AI Workflow tab no longer shows prompts 14, 25 and 32 (7 key prompts remain), and stage 7 has no quote box; its facts, including that Andrew required the 3D pancreas, are unchanged. This log still holds all prompts verbatim. The content test now also checks that the three are not on the page.
