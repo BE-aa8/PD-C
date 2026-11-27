@@ -173,7 +173,11 @@ const uiDec = await page.locator('#ai-dec-table tbody tr td:nth-child(4)').allTe
 const shownDec = mdDec.map((d) => (d === 'Accept as [TO VERIFY]' ? 'Accept (checked later against the textbook; resolved)' : d));
 check('Decision table = docs/critique-decisions.md (26 rows, same decisions, all approved)', mdRows.length === 26 && uiDec.length === 26 && uiDec.every((d, i) => d.trim() === shownDec[i]) && mdRows.every((l) => l.includes('✅')), `${uiDec.length} rows`);
 check('Gemini build link points to /gemini/', (await page.locator('#ai-gemini-link').getAttribute('href')) === 'gemini/', '');
-check('Andrew\'s conclusions are placeholders (not written by AI)', (await page.locator('.own-box[data-owner="andrew"] .tag').allInnerTexts()).every((t) => /To be written by Andrew/.test(t)) && (await page.locator('.own-box').count()) === 2, '');
+// Andrew's own words: the website box must match his "My conclusions" in docs/comparison.md exactly
+const cmpDoc = readFileSync(join(ROOT, 'docs/comparison.md'), 'utf8');
+const myConcl = cmpDoc.split('## 7. My conclusions (Andrew)')[1].split('\n\n')[1].trim();
+const ownTxt = (await page.locator('#own-conclusions blockquote').innerText()).trim();
+check('Andrew\'s conclusions on the site = docs/comparison.md §7 (his words), credited, no placeholders left', ownTxt === myConcl && (await page.locator('.own-box figcaption').allInnerTexts()).every((x) => x.includes('Andrew')) && (await page.locator('.own-box').count()) === 2 && !/To be written/.test(await page.locator('#panel-ai').textContent()), ownTxt.slice(0, 40));
 await page.click('[data-tab="video"]');
 await page.waitForTimeout(400);
 const vcfg = await page.evaluate(async () => import(new URL('js/video.js', location.href)).then((m) => m.VIDEO));

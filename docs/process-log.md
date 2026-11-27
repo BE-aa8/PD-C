@@ -480,3 +480,13 @@ Measurements are from local headless Chromium with the CDN files served from loc
 **Still placeholders, by Andrew's choice:** the video and transcript, and the two "To be written by Andrew" sections.
 
 **Results (local):** `npm test` 65/65; data drift check passes; content test 78/78 in both themes; accessibility test 0 serious/critical in both themes; smoke test 0 failures on `/`, `/?theme=light`, `/gemini/`.
+
+### Part 25: Andrew's conclusions and reflections added
+
+**Prompt (verbatim):** 40. "add this to the website conclusions: After comparison, I chose to ship mostly Anthropic made content. I found that Claude had better design and overall building skills. Something that surprised me while making the website was how good ChatGPT is at making moodboards and planning for uI and UX implementations. I found it much better than Claude and Gemini. If I were to rebuild a website, I would use GitHub Pages with a Gemini API key implementation, similar to what I did in Process Dynamics and Controls. This does cost you (I spent around $5 for both Separations and PD&C), but it is definitely worth it for hands free integration!
+
+Something I learned about process control over these past few weeks has been how recycle effects processes. I liked working with AI and expanding my knowledge on building websites. In the future, I would like to further my understanding of LLMs and use GitHub Pages and Claude to build a homepage for all of my project and endeavors."
+
+**Andrew's answers:** typos → "Fix those three typos (Recommended)" ("uI" → "UI", "effects" → "affects", "project and endeavors" → "projects and endeavors"; nothing else changed); also in the comparison document → "Yes, both places (Recommended)".
+
+**What changed:** the AI Workflow tab's two placeholder boxes now hold Andrew's two paragraphs, credited "— Andrew"; `docs/comparison.md` §7 "My conclusions" holds paragraph 1. The content test checks that the website text equals §7 word for word and that no "To be written" placeholder remains. Claude wrote none of this text.

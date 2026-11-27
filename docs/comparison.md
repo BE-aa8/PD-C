@@ -161,13 +161,10 @@ Later changes to Claude's site (listed so the comparison stays honest):
 - **Copying the expected values is allowed, and it shows:** Gemini took the default gains straight from the test file;
   Claude recomputed them. Graders should know that the precision gap comes from this, not from the integrator.
 
-## 7. My conclusions (Andrew, to write)
-> _Left blank on purpose. Questions to consider:_
-> - Which build would I ship, and why? (Fix Gemini's P9 and diagram, or use Claude's?)
-> - Which difference surprised me most: the chart the tests couldn't catch, the missing equations, or the overstated
->   AI Workflow text?
-> - What would I change next time (content checks in the browser test, the same harness for both, a Pro-tier Gemini,
->   repeat runs)?
+## 7. My conclusions (Andrew)
+_Written by Andrew on 2026-11-27 (three typos fixed at his request; the original message is in the process log, Part 25). Also shown on the website's AI Workflow tab._
+
+After comparison, I chose to ship mostly Anthropic made content. I found that Claude had better design and overall building skills. Something that surprised me while making the website was how good ChatGPT is at making moodboards and planning for UI and UX implementations. I found it much better than Claude and Gemini. If I were to rebuild a website, I would use GitHub Pages with a Gemini API key implementation, similar to what I did in Process Dynamics and Controls. This does cost you (I spent around $5 for both Separations and PD&C), but it is definitely worth it for hands free integration!
 
 ## Screenshots
 Same viewport (1280 px), `docs/screenshots/comparison/`:
