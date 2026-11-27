@@ -169,7 +169,9 @@ check('Prompts 14, 25 and 32 are not shown (removed at Andrew\'s request)', !/Bu
 const mdRows = readFileSync(join(ROOT, 'docs/critique-decisions.md'), 'utf8').split('\n').filter((l) => /^\| \d+ \|/.test(l));
 const mdDec = mdRows.map((l) => l.split(' | ')[3].replace(/\*\*/g, '').trim());
 const uiDec = await page.locator('#ai-dec-table tbody tr td:nth-child(4)').allTextContents(); // inside a closed disclosure: textContent
-check('Decision table = docs/critique-decisions.md (26 rows, same decisions, all approved)', mdRows.length === 26 && uiDec.length === 26 && uiDec.every((d, i) => d.trim() === mdDec[i]) && mdRows.every((l) => l.includes('✅')), `${uiDec.length} rows`);
+// row 25 was 'Accept as [TO VERIFY]'; resolved later (process log Part 24), so the site shows it as resolved
+const shownDec = mdDec.map((d) => (d === 'Accept as [TO VERIFY]' ? 'Accept (checked later against the textbook; resolved)' : d));
+check('Decision table = docs/critique-decisions.md (26 rows, same decisions, all approved)', mdRows.length === 26 && uiDec.length === 26 && uiDec.every((d, i) => d.trim() === shownDec[i]) && mdRows.every((l) => l.includes('✅')), `${uiDec.length} rows`);
 check('Gemini build link points to /gemini/', (await page.locator('#ai-gemini-link').getAttribute('href')) === 'gemini/', '');
 check('Andrew\'s conclusions are placeholders (not written by AI)', (await page.locator('.own-box[data-owner="andrew"] .tag').allInnerTexts()).every((t) => /To be written by Andrew/.test(t)) && (await page.locator('.own-box').count()) === 2, '');
 await page.click('[data-tab="video"]');
@@ -185,7 +187,8 @@ await page.click('[data-tab="refs"]');
 await page.waitForTimeout(400);
 const nSources = await page.evaluate(async () => Object.keys((await import(new URL('js/data.js', location.href))).DATA.sources).length);
 check('References: one #ref-list item per DATA.sources entry', (await page.locator('#ref-list li').count()) === nSources, `${nSources} sources`);
-check('References keep the [TO VERIFY] flags', (await page.locator('#panel-refs .tv').count()) >= 4, `${await page.locator('#panel-refs .tv').count()} flags`);
+const openFlags = await page.evaluate(() => [...document.querySelectorAll('[role="tabpanel"]')].filter((p) => /TO VERIFY/i.test(p.textContent)).map((p) => p.id));
+check('No [TO VERIFY] flags left on any tab (all resolved)', openFlags.length === 0, openFlags.join(', '));
 await page.click('[data-tab="design"]');
 await page.waitForTimeout(300);
 

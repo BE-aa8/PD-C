@@ -407,7 +407,7 @@ const METRIC_ROWS = [
   ['peak', 'Peak glucose', 'mg/dL', 'G_{\\max} = \\max_t G(t)', 'Highest true glucose: how far the meal pushes G up.', 1],
   ['nadir', 'Nadir glucose', 'mg/dL', 'G_{\\min} = \\min_t G(t)', 'Lowest true glucose: the undershoot after the controller reacts.', 1],
   ['pct_in_band', 'Time in chosen band', '%', '\\tfrac{100}{t_f}\\int_0^{t_f} \\mathbf{1}[\\text{in band}]\\,dt', 'Share of the horizon inside the band (strict limits for 54–144).', 1],
-  ['pct_in_70_180', 'Time in 70–180', '%', '\\tfrac{100}{t_f}\\int_0^{t_f} \\mathbf{1}[70\\le G\\le 180]\\,dt', 'Secondary clinical-style metric (source marked to verify).', 1],
+  ['pct_in_70_180', 'Time in 70–180', '%', '\\tfrac{100}{t_f}\\int_0^{t_f} \\mathbf{1}[70\\le G\\le 180]\\,dt', 'Secondary clinical-style metric (Battelino et al., 2019).', 1],
   ['pct_below_54', 'Time below 54', '%', '\\tfrac{100}{t_f}\\int_0^{t_f} \\mathbf{1}[G<54]\\,dt', 'Time under the lower safety limit.', 1],
   ['pct_below_70', 'Time below 70', '%', '\\tfrac{100}{t_f}\\int_0^{t_f} \\mathbf{1}[G<70]\\,dt', 'Time in the low range.', 1],
   ['pct_above_high', 'Time at/above upper limit', '%', '\\tfrac{100}{t_f}\\int_0^{t_f} \\mathbf{1}[G\\ge G_{high}]\\,dt', 'Time over the chosen band’s upper limit.', 1],
@@ -816,7 +816,7 @@ function buildDesign() {
       <div class="config-head"><h3>Tuning inputs</h3><p>shared with the Simulator</p></div>
       <div class="config-grid" id="design-ctl-grid"></div>
       <div class="row config-foot"><button class="btn" id="tauc-guideline" type="button">Set τc = θ_total (SIMC guideline)</button>
-        <p class="chart-cap">Guideline: Skogestad SIMC suggests τc = θ; Rivera et al. suggest τc &gt; 0.8θ [TO VERIFY in Seborg Ch. 12]. The tests and presets use τc = 20 min.</p></div>
+        <p class="chart-cap">Guideline: Skogestad’s SIMC rule τc = θ (Skogestad, 2003). The tests and presets use τc = 20 min.</p></div>
     </div>
   </section>
 
@@ -1045,7 +1045,7 @@ function renderDesign() {
         ? [`K_c=\\frac{\\tau}{K(\\tau_c+\\theta)}=\\frac{${tf(rm.tau, 2)}}{${tf(rm.K, 3)}(${tf(state.tau_c, 0)}+${tf(tu.theta_total, 2)})}=${tf(tu.Kc, 4)}`, `\\tau_I=\\tau=${tf(tu.tauI, 2)},\\quad \\tau_D=0`]
         : [`K_c=\\frac{\\tau+\\theta/2}{K(\\tau_c+\\theta/2)}=${tf(tu.Kc, 4)}`, `\\tau_I=\\tau+\\tfrac{\\theta}{2}=${tf(tu.tauI, 2)},\\quad \\tau_D=\\frac{\\tau\\theta}{2\\tau+\\theta}=${tf(tu.tauD, 2)}`],
     units: 'K_c in (mU/min)/(mg/dL); τ_I, τ_D, τ_c in min.',
-    meaning: `K_c is negative because insulin lowers glucose (reverse-acting process). Larger τ_c → smaller |K_c| → slower, safer loop. Mode ${state.mode}${state.mode !== 'PID' ? ' drops ' + (state.mode === 'P' ? 'the integral and derivative' : 'the derivative') : ''}. Row numbers in Table 12.1 [TO VERIFY].`,
+    meaning: `K_c is negative because insulin lowers glucose (reverse-acting process). Larger τ_c → smaller |K_c| → slower, safer loop. Mode ${state.mode}${state.mode !== 'PID' ? ' drops ' + (state.mode === 'P' ? 'the integral and derivative' : 'the derivative') : ''}. Row numbers in Table 12.1.`,
     extra: state.tuning_mode === 'manual' && fin(state.Kc_man) ? `<div class="callout"><h4>Manual mode: IMC values above are for reference</h4>${T(`\\text{loop uses } K_c=${tf(state.Kc_man, 3)},\\;\\tau_I=${tf(state.tauI_man, 1)},\\;\\tau_D=${tf(state.tauD_man, 1)};\\quad \\frac{K_c}{K_{c,IMC}}=${tf(state.Kc_man / tu.Kc, 2)}`)}<p class="units"><b>Units:</b> K_c in (mU/min)/(mg/dL); τ in min; the ratio is dimensionless.</p><p class="meaning"><b>Meaning:</b> ${state.Kc_man > 0 ? 'K<sub>c</sub> > 0 has the wrong sign for this reverse-acting process: the loop adds insulin when glucose is low.' : state.Kc_man / tu.Kc > 1 ? 'Your loop is more aggressive than the IMC design (larger |K<sub>c</sub>|): faster, but closer to oscillation.' : 'Your loop is gentler than the IMC design (smaller |K<sub>c</sub>|): slower, but more robust to the sensor delay.'}</p></div>` : '',
   }));
   set('ds-pid', card({
@@ -1075,7 +1075,7 @@ function renderDesign() {
   const m0 = ok ? M.margins({ Kc: e.Kc, tauI: e.tauI, tauD: e.tauD, N: e.N, theta: 0 }) : null;
   const mcard = (title, tex, units, meaning) => card({ title, tex, units, meaning });
   const marginsEl = document.getElementById('ds-margins');
-  // metric strip: the four numbers at a glance; ranges are textbook rules of thumb (PM 30-45 deg, GM 1.7-4) [TO VERIFY in Seborg Ch. 14]
+  // metric strip: the four numbers at a glance; ranges from Seborg Ch. 14 (PM ≥ 30°, GM ≥ 1.7)
   const strip = document.getElementById('ds-margin-strip');
   if (!ok) strip.innerHTML = '';
   else {
@@ -1086,7 +1086,7 @@ function renderDesign() {
       metricHTML(fmt(mg.GM, 2), '×', 'gain margin', gmFlag),
       metricHTML(fmt(mg.wc, 4), 'rad/min', 'crossover frequency ω_c'),
       metricHTML(fmt(mg.total_tolerable_delay, 1), 'min', 'total delay the loop tolerates'),
-    ].join('') + '<p class="strip-note">Green/red: rule-of-thumb ranges PM ≥ 30° and GM ≥ 1.7 [TO VERIFY in Seborg Ch. 14]. Each number is derived in the cards below.</p>';
+    ].join('') + '<p class="strip-note">Green/red: PM ≥ 30° and GM ≥ 1.7 (Seborg et al., Ch. 14). Each number is derived in the cards below.</p>';
   }
   if (!ok) {
     marginsEl.innerHTML = '<div class="card"><h3>Open loop selected</h3><p>Stability margins describe the feedback loop; switch the Simulator to closed loop (PID).</p></div>';
@@ -1166,9 +1166,7 @@ function renderDesign() {
 
 // ------------------------------------------------------------------ REFERENCES
 function renderRefs() {
-  // [TO VERIFY] inside a source string is kept and highlighted
-  const tv = (t) => esc(t).replace(/\[TO VERIFY[^\]]*\]/g, (m) => `<span class="tv">${m}</span>`);
-  document.getElementById('ref-list').innerHTML = Object.entries(DATA.sources).map(([k, v]) => `<li><code>${esc(k)}</code>: ${tv(v)}</li>`).join('');
+  document.getElementById('ref-list').innerHTML = Object.entries(DATA.sources).map(([k, v]) => `<li><code>${esc(k)}</code>: ${esc(v)}</li>`).join('');
   document.getElementById('ref-ai').innerHTML = `<thead><tr><th>Model</th><th>Service</th><th>Contribution</th></tr></thead><tbody>${
     MODELS.map((m) => `<tr><td><b>${esc(m.m)}</b></td><td>${esc(m.svc)}</td><td>${esc(m.did)}</td></tr>`).join('')}</tbody>`;
   document.getElementById('ref-log-link').href = REPO + 'docs/process-log.md';
@@ -1195,14 +1193,16 @@ function buildWorkflow() {
   tl.querySelectorAll('.tl-step').forEach((b) => b.addEventListener('click', () => show(b.dataset.stage)));
   show(STAGES[0].id);
   // decisions: counts by kind + the full table
-  const kind = (d) => (d.startsWith('Reject') ? 'Rejected' : /modified/.test(d) ? 'Accepted, modified' : /TO VERIFY/.test(d) ? 'Accepted as [TO VERIFY]' : 'Accepted');
+  // row 25 was accepted 'as [TO VERIFY]' and later settled against the textbook (process log Part 24); shown resolved here
+  const shown = (d) => (d.d === 'Accept as [TO VERIFY]' ? 'Accept (checked later against the textbook; resolved)' : d.d);
+  const kind = (d) => (d.startsWith('Reject') ? 'Rejected' : /modified/.test(d) ? 'Accepted, modified' : /checked later/.test(d) ? 'Accepted, checked later' : 'Accepted');
   const counts = {};
-  DECISIONS.forEach((d) => { const k = kind(d.d); counts[k] = (counts[k] || 0) + 1; });
+  DECISIONS.forEach((d) => { const k = kind(shown(d)); counts[k] = (counts[k] || 0) + 1; });
   document.getElementById('ai-dec-summary').innerHTML = Object.entries(counts).map(([k, n]) =>
     `<div class="metric ${k === 'Rejected' ? 'bad' : ''}"><div class="mv">${n}</div><div class="ml">${esc(k)}</div></div>`).join('') +
     `<p class="strip-note">All ${DECISIONS.length} rows approved by Andrew: “approve all, go with your recommendations.” Source: ${docLink({ label: 'docs/critique-decisions.md', path: 'docs/critique-decisions.md' })}</p>`;
   document.getElementById('ai-dec-table').innerHTML = `<thead><tr><th>#</th><th>Gemini's suggestion</th><th>Severity</th><th>Decision</th><th>Reasoning</th></tr></thead><tbody>${
-    DECISIONS.map((d) => `<tr data-kind="${esc(kind(d.d))}"><td class="num">${d.n}</td><td>${esc(d.s)}</td><td>${esc(d.sev)}</td><td><b>${esc(d.d)}</b></td><td>${esc(d.r)}</td></tr>`).join('')}</tbody>`;
+    DECISIONS.map((d) => `<tr data-kind="${esc(kind(shown(d)))}"><td class="num">${d.n}</td><td>${esc(d.s)}</td><td>${esc(d.sev)}</td><td><b>${esc(shown(d))}</b></td><td>${esc(d.r)}</td></tr>`).join('')}</tbody>`;
   document.getElementById('ai-cmp-table').innerHTML = `<thead><tr><th>Measure</th><th>Claude (Opus 5.5)</th><th>Gemini (3.8-flash)</th><th>Source</th></tr></thead><tbody>${
     COMPARE.map(([k, c, g, src]) => `<tr><td>${esc(k)}</td><td>${esc(c)}</td><td>${esc(g)}</td><td class="src">${esc(src)}</td></tr>`).join('')}</tbody>`;
   document.getElementById('ai-cmp-link').href = REPO + 'docs/comparison.md';
@@ -1422,7 +1422,7 @@ const ORGAN_TEXT = {
   tail: ['Tail', 'The narrow end, reaching toward the spleen.'],
   duct: ['Main pancreatic duct', 'Runs along the gland and drains into the duodenum. Shown alone, with the rest of the pancreas faded.'],
 };
-const ISLET_NOTE = 'Islets (schematic): small clusters of cells scattered through the pancreas whose β-cells release insulin when glucose rises — the body\'s own glucose controller, which an artificial pancreas replaces with a sensor, an algorithm and a pump. [Seborg et al., Ch. 23 — TO VERIFY]';
+const ISLET_NOTE = 'Islets (schematic): small clusters of cells scattered through the pancreas whose β-cells release insulin when glucose rises — the body\'s own glucose controller, which an artificial pancreas replaces with a sensor, an algorithm and a pump. [Seborg et al., Ch. 23]';
 function organInfo(key) {
   const [h, p] = ORGAN_TEXT[key] || ORGAN_TEXT.null;
   document.getElementById('organ-info').innerHTML = `<h4>${h}</h4><p>${p}</p><p class="src">${ISLET_NOTE}</p>`;

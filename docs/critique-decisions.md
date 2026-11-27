@@ -76,3 +76,5 @@ All checks were run against the Python reference (`ap-sim/`). Commands and outpu
 - **Reference fixes in `ap-sim`** (rows 3 and 13), each with a new test.
 - **Plan v2** (`docs/plan-v2-final.md`): plan v1 with every approved row merged in, the static-site architecture, and the `model.js` API contract.
 - **Then step 5 of the workflow plan:** `tools/build_expected.py` → `tests/expected.json`, `tests/model.test.mjs`, `tests/browser-smoke.mjs`, `docs/build-prompt.md`.
+
+**Later resolution (2026-11-27):** row 25 (τc guidelines, accepted "as [TO VERIFY]") was settled by Andrew: the site keeps only the SIMC guideline τc = θ, cited to Skogestad (2003), *J. Process Control* 13:291–309 (citation confirmed online), and drops the "τc > 0.8θ (Rivera et al., 1986)" part, which could not be confirmed. See process log Part 24. The table above is left as originally approved.

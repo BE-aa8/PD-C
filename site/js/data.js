@@ -10,7 +10,7 @@ export const DATA = {
   "seborg_ex23_3": "Seborg, Edgar, Mellichamp & Doyle, Process Dynamics and Control, 4th ed., Wiley, Example 23.3 (model from Bequette, 2002)",
   "seborg_23_2": "Seborg et al., 4th ed., Sec. 23.2 (CGM sample period; cites Harvey et al., 2010)",
   "seborg_ex23_6": "Seborg et al., 4th ed., Exercise 23.6 (sensor delay of 10 min in part e)",
-  "battelino_2019": "Battelino et al., Diabetes Care (2019), international consensus on time in range [TO VERIFY]",
+  "battelino_2019": "Battelino T, et al. Clinical Targets for Continuous Glucose Monitoring Data Interpretation: Recommendations From the International Consensus on Time in Range. Diabetes Care 2019;42(8):1593-1603. doi:10.2337/dci19-0028",
   "reference": "Computed offline by the Python reference implementation (ap-sim/, this repository); see tools/build_data.py",
   "display_threshold": "Display threshold chosen by the project (not from a source): below this the model, which has no counter-regulation, is qualitative only"
  },

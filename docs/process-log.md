@@ -466,3 +466,17 @@ Measurements are from local headless Chromium with the CDN files served from loc
 **Prompt (verbatim):** 38. "remove prompts 14, 25, 32 from website." Answer to Claude's question on prompt 32, which also appeared as the quote in timeline stage 7: "Remove both (Recommended)".
 
 **What changed:** the AI Workflow tab no longer shows prompts 14, 25 and 32 (7 key prompts remain), and stage 7 has no quote box; its facts, including that Andrew required the 3D pancreas, are unchanged. This log still holds all prompts verbatim. The content test now also checks that the three are not on the page.
+
+### Part 24: every [TO VERIFY] flag resolved on the website
+
+**Prompt (verbatim):** 39. "okay now I want to completely finish the website. get rid of all of the to verify and red tags. ask me questions and we can clear things up and push"
+
+**Andrew's answers to Claude's questions (verbatim option labels):** Seborg Ch. 14 margin ranges (PM ≥ 30°, GM ≥ 1.7) → "Book confirms it"; the model's source → "Secondary citation (Recommended)"; the τc guideline → "Keep only τc = θ (Recommended)"; the β-cell sentence (Seborg Ch. 23) and the Table 12.1 rows → "Book confirms both"; the two "To be written by Andrew" boxes → "Keep as placeholders"; the video → "Not yet, keep placeholder"; the history rows that mention TO VERIFY → "Reword on the site (Recommended)".
+
+**Checked online by Claude before asking** (web search: PubMed/PMC and the authors' NTNU pages): Battelino T, et al., *Clinical Targets for Continuous Glucose Monitoring Data Interpretation: Recommendations From the International Consensus on Time in Range*, Diabetes Care 2019;42(8):1593–1603, doi:10.2337/dci19-0028; Skogestad S., *Simple analytic rules for model reduction and PID controller tuning*, J. Process Control 2003;13:291–309; Rivera, Morari & Skogestad 1986 exists (Ind. Eng. Chem. Process Des. Dev. 25:252–265), but the "τc > 0.8θ" guideline could not be confirmed, so it was removed. Seborg's own wording could not be found online; those items rest on Andrew's check of the book.
+
+**What changed on the site:** all eight open flags removed with the resolutions above (References, the Control Design guideline caption and margin strip, the IMC step card, the islet note, the "Time in 70–180" metric). The Battelino citation was updated where it is generated (`tools/build_data.py` → `site/js/data.js`, one line; the CI drift check passes; Gemini's frozen copy is untouched). On the AI Workflow tab, critique row 25 shows "Accept (checked later against the textbook; resolved)" and the comparison row reads "Unverified-source flags"; `docs/critique-decisions.md` keeps the original table with a dated resolution note. The content test now checks that no tab contains "TO VERIFY" (78 checks).
+
+**Still placeholders, by Andrew's choice:** the video and transcript, and the two "To be written by Andrew" sections.
+
+**Results (local):** `npm test` 65/65; data drift check passes; content test 78/78 in both themes; accessibility test 0 serious/critical in both themes; smoke test 0 failures on `/`, `/?theme=light`, `/gemini/`.

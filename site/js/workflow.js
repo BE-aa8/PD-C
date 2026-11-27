@@ -302,7 +302,7 @@ export const COMPARE = [
   "page, code"
  ],
  [
-  "[TO VERIFY] flags",
+  "Unverified-source flags",
   "kept",
   "removed",
   "page text"
