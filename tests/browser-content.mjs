@@ -183,6 +183,28 @@ await page.waitForTimeout(400);
 const vcfg = await page.evaluate(async () => import(new URL('js/video.js', location.href)).then((m) => m.VIDEO));
 const vstate = await page.locator('#video-stage').getAttribute('data-state');
 check('Video: placeholder until a YouTube id is set', vcfg.youtubeId ? vstate === 'poster' : (vstate === 'placeholder' && (await page.locator('#video-stage iframe').count()) === 0), `state ${vstate}`);
+// slides viewer under the video (site/js/slides.js)
+const deck = await page.evaluate(async () => import(new URL('js/slides.js', location.href)).then((m) => m.DECK));
+
+const sCount = async () => (await page.locator('#slide-count').innerText()).trim();
+const src0 = await page.locator('#slide-img').getAttribute('src');
+check('Slides: 18 slides with thumbnails, starts on 1 / 18, Prev disabled', deck.slides.length === 18 && (await page.locator('.slides-thumbs button').count()) === 18 && (await sCount()) === '1 / 18' && (await page.locator('#slide-prev').isDisabled()), await sCount());
+await page.click('#slide-next');
+const src1 = await page.locator('#slide-img').getAttribute('src');
+const c2 = await sCount();
+await page.click('#slide-prev');
+check('Slides: Next shows slide 2 (new image), Prev returns to 1', c2 === '2 / 18' && src1 !== src0 && (await sCount()) === '1 / 18', `${c2}`);
+await page.locator('#slides-stage').focus();
+await page.keyboard.press('ArrowRight');
+const cKey = await sCount();
+await page.locator('.slides-thumbs button').nth(17).click();
+check('Slides: ArrowRight advances; the last thumbnail jumps to 18 / 18 and disables Next', cKey === '2 / 18' && (await sCount()) === '18 / 18' && (await page.locator('#slide-next').isDisabled()) && (await page.locator('.slides-thumbs button').nth(17).getAttribute('aria-current')) === 'true', cKey);
+const slideAlt = await page.locator('#slide-img').getAttribute('alt');
+const thumbLabels = await page.locator('.slides-thumbs button').evaluateAll((bs) => bs.map((b) => b.getAttribute('aria-label') || ''));
+check('Slides: main image and every thumbnail have a text label', /^Slide 18 of 18: \S/.test(slideAlt) && thumbLabels.every((l) => /^Slide \d+: \S/.test(l)), slideAlt);
+const slideFiles = [...deck.slides.map((x) => x.src), deck.pdf, deck.pptx];
+const slideStatus = await page.evaluate(async (fs) => Promise.all(fs.map((f) => fetch(new URL(f, location.href), { method: 'HEAD' }).then((r) => r.status))), slideFiles);
+check('Slides: every slide image, the PDF and the PPTX are served (200)', slideStatus.every((st) => st === 200), slideStatus.filter((st) => st !== 200).join(','));
 await page.locator('#transcript summary').click();
 const tOpen = await page.locator('#transcript').evaluate((el) => el.open);
 const tText = await page.locator('#transcript-body').innerText();

@@ -492,3 +492,40 @@ Something I learned about process control over these past few weeks has been how
 **What changed:** the AI Workflow tab's two placeholder boxes now hold Andrew's two paragraphs, credited "— Andrew"; `docs/comparison.md` §7 "My conclusions" holds paragraph 1. The content test checks that the website text equals §7 word for word and that no "To be written" placeholder remains. Claude wrote none of this text.
 
 **Follow-up (same day):** the live-site accessibility test then failed once (CI run 45920836171; the site itself had deployed and the content test passed 78/78 live). Cause: on the live site KaTeX's web fonts arrive one face at a time from the CDN, and two equations became a few pixels wider than their box *after* the keyboard-focus pass had run, so axe saw scrollable equations that could not be focused. Reproduced locally by delaying the KaTeX fonts by 3 s. Fix: a ResizeObserver on each equation re-runs the pass whenever its typeset size changes (plus once when all fonts are ready). With delayed fonts and with normal fonts: accessibility 0 serious/critical in both themes; content test 78/78 in both themes.
+
+### Part 26: Video script help, and the slides embedded under the video
+
+**Prompts (verbatim, short):**
+- 41. "here are the slides that im using to present in class and for the yt video. what im having trouble with is understanding every part of the website and how to explain it. … provide a layout/script …" The answers were about 15 minutes, a .docx not added to the repo, plus a glossary and Q&A prep.
+- 42. "update the slides with those fixes, and give the script as something I can actually open, it won't let me open it right now. a claude artifact is okay also as long as I can open it"
+- 43. "nice, can you make an easily printable version that can use minimal ink while still being readable on white apper"
+- 44. "can you also embed the presentation into the website, this can be just right under the video embed"
+
+**What was done for 41–43 (outside the repo, at Andrew's request):**
+- Claude Opus 5.5 wrote a ~15-minute script. Part A covers the slides and Part B the website, with click-by-click stops, a glossary, and ten "how does that make sense?" Q&A answers.
+- The script was delivered as a .docx, then as a Claude artifact (the .docx would not open for Andrew), then as a 12-page low-ink PDF.
+- The deck was fixed to match the site:
+  - slide 2: 35 → 40 prompts;
+  - slide 7: "Double meal" → "2× meal";
+  - slide 11: 43.2 → 43.4 min;
+  - slide 17: the "to be written" boxes were replaced with Andrew's own conclusions.
+- Every number in the script was checked against the site and `tests/expected.json`.
+
+**Plan for 44:** `docs/plan-slides-embed-claude.md`.
+
+**What changed for 44:**
+- The Video & Transcript tab now has a slide viewer under the video with:
+  - Prev/Next buttons and a live counter ("5 / 18");
+  - left/right arrow keys;
+  - a thumbnail strip, full screen, and download links for the PDF and PPTX.
+- The images are `site/slides/slide-NN.webp` (1600 px, 0.6 MB in total). They were rendered from the fixed deck with the new `tools/build_slides.py`.
+- `site/js/slides.js` lists one title per slide. Each title is used as alt text and as the caption.
+- The deck's "40 prompts" is a snapshot from when the slides were made. This log now has 44.
+
+**Results (local):**
+- `npm test` 65/65.
+- Content test 83/83, including 5 new slide-viewer checks.
+- Accessibility test: 0 serious/critical findings, also with fonts delayed.
+- Smoke test: 0 failures.
+- No horizontal scroll at 375 px.
+- Screenshots checked at desktop light/dark and on a phone.

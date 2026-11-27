@@ -4,6 +4,7 @@ import { DATA } from './data.js';
 import * as M from './model.js';
 import { REPO, MODELS, STAGES, PROMPTS, COMPARE, DECISIONS } from './workflow.js';
 import { VIDEO } from './video.js';
+import { DECK } from './slides.js';
 
 const P = M.PARAMS;
 const LM = M.linearModel();
@@ -1244,6 +1245,54 @@ function buildVideo() {
     : '<p class="transcript-empty"><span class="tag">Placeholder</span> The YouTube auto-generated transcript will be pasted here verbatim after the video is published.</p>';
 }
 
+// ------------------------------------------------------------------ SLIDES (site/js/slides.js lists the deck images)
+function buildSlides() {
+  const root = document.getElementById('slides-viewer');
+  const S = DECK.slides, n = S.length;
+  const fsOK = !!(root.requestFullscreen && document.fullscreenEnabled);
+  root.innerHTML = `
+    <div class="slides-stage" id="slides-stage" tabindex="0" role="group" aria-roledescription="slide viewer" aria-label="Presentation slides (left and right arrow keys change slide)">
+      <img id="slide-img" src="${S[0].src}" alt="" width="1600" height="900" decoding="async">
+    </div>
+    <div class="slides-bar">
+      <button type="button" class="btn" id="slide-prev" aria-label="Previous slide">← Prev</button>
+      <p class="slides-count" id="slide-count" aria-live="polite"></p>
+      <button type="button" class="btn" id="slide-next" aria-label="Next slide">Next →</button>
+      ${fsOK ? '<button type="button" class="btn" id="slide-fs">Full screen</button>' : ''}
+      <span class="slides-dl"><a href="${DECK.pdf}" download>Download PDF</a> · <a href="${DECK.pptx}" download>PowerPoint (.pptx)</a></span>
+    </div>
+    <p class="slides-cap" id="slide-cap"></p>
+    <ol class="slides-thumbs" id="slides-thumbs" tabindex="0" aria-label="All slides">
+      ${S.map((s, i) => `<li><button type="button" data-i="${i}" aria-label="Slide ${i + 1}: ${esc(s.title)}"><img src="${s.src}" alt="" loading="lazy" width="160" height="90"><span aria-hidden="true">${i + 1}</span></button></li>`).join('')}
+    </ol>`;
+  const img = document.getElementById('slide-img'), stage = document.getElementById('slides-stage');
+  const thumbs = [...root.querySelectorAll('.slides-thumbs button')];
+  let cur = 0;
+  const show = (i) => {
+    cur = Math.max(0, Math.min(n - 1, i));
+    img.src = S[cur].src;
+    img.alt = `Slide ${cur + 1} of ${n}: ${S[cur].title}`;
+    root.dataset.slide = String(cur + 1);
+    document.getElementById('slide-count').textContent = `${cur + 1} / ${n}`;
+    document.getElementById('slide-cap').textContent = S[cur].title;
+    document.getElementById('slide-prev').disabled = cur === 0;
+    document.getElementById('slide-next').disabled = cur === n - 1;
+    thumbs.forEach((b, k) => (k === cur ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current')));
+    if (cur + 1 < n) new Image().src = S[cur + 1].src; // preload the next slide only
+  };
+  document.getElementById('slide-prev').addEventListener('click', () => show(cur - 1));
+  document.getElementById('slide-next').addEventListener('click', () => show(cur + 1));
+  thumbs.forEach((b) => b.addEventListener('click', () => { show(+b.dataset.i); }));
+  root.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') { show(cur + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft') { show(cur - 1); e.preventDefault(); }
+  });
+  if (fsOK) document.getElementById('slide-fs').addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen(); else stage.requestFullscreen().then(() => stage.focus()).catch(() => {});
+  });
+  show(0);
+}
+
 // ------------------------------------------------------------------ OVERVIEW (story + 3D pancreas)
 // Every number on the Overview is computed here from the engine (simulate, metrics, linearModel, margins) or DATA.
 const OV = {};
@@ -1708,7 +1757,7 @@ function init() {
     .observe(root, { attributes: true, attributeFilter: ['data-theme'] });
   syncToggle();
   try { buildOverview(); } catch (e) { console.warn('overview visuals failed', e); }
-  try { buildWorkflow(); buildVideo(); } catch (e) { console.warn('workflow/video content failed', e); }
+  try { buildWorkflow(); buildVideo(); buildSlides(); } catch (e) { console.warn('workflow/video content failed', e); }
   initReveal();
   showTab(location.hash ? location.hash.slice(1) : 'overview');
 }
