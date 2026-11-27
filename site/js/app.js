@@ -36,13 +36,20 @@ function renderTex(root) {
 // an equation wider than its box scrolls sideways; make exactly those keyboard-focusable (WCAG: scrollable regions)
 function markScrollable(root) {
   root.querySelectorAll('.eq').forEach((el) => {
+    const inner = el.firstElementChild;
+    if (eqWatch && inner && !inner.dataset.watched) { inner.dataset.watched = '1'; eqWatch.observe(inner); }
     const over = el.scrollWidth > el.clientWidth + 1;
     if (over && !el.hasAttribute('tabindex')) el.tabIndex = 0;
     else if (!over && el.hasAttribute('tabindex')) el.removeAttribute('tabindex');
   });
 }
 let markTimer = 0;
-window.addEventListener('resize', () => { clearTimeout(markTimer); markTimer = setTimeout(() => markScrollable(document), 200); });
+const remark = () => { clearTimeout(markTimer); markTimer = setTimeout(() => markScrollable(document), 80); };
+window.addEventListener('resize', remark);
+// KaTeX's web fonts arrive one face at a time, possibly after an equation is typeset, and can make it wider than its
+// box: watch each equation's content size and check again whenever it changes
+const eqWatch = 'ResizeObserver' in window ? new ResizeObserver(remark) : null;
+if (document.fonts) document.fonts.ready.then(remark);
 const T = (tex, display = true) => `<div class="eq" data-tex="${esc(tex)}"${display ? ' data-display' : ''}></div>`;
 const Ti = (tex) => `<span data-tex="${esc(tex)}"></span>`;
 function card({ title, tex, units, meaning, extra = '', id = '' }) {
