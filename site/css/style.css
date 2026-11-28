@@ -922,6 +922,15 @@ body[data-tab="overview"] .site-header { -webkit-backdrop-filter: none; backdrop
 .transcript-body { max-height: 70vh; overflow-y: auto; }
 .transcript-body p { max-width: 70ch; font-size: 1.0625rem; line-height: 1.75; color: var(--text); }
 .transcript-empty { color: var(--text-3) !important; font-size: var(--fs-small) !important; }
+.video-yt-p { margin: var(--sp-4) 0 0; font-size: var(--fs-small); }
+.video-yt-p a { color: var(--accent-ink); font-weight: 650; }
+.tx-note { margin: 0 0 var(--sp-3); color: var(--text-3) !important; font-size: var(--fs-small) !important; line-height: 1.5 !important; }
+.tx-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.tx-list li { display: grid; grid-template-columns: 4.25em minmax(0, 1fr); gap: var(--sp-3); align-items: baseline; padding: 4px 0; border-top: 1px solid var(--line); }
+.tx-ts { justify-self: start; font: 650 var(--fs-small)/1.4 var(--font-body); font-variant-numeric: tabular-nums; color: var(--accent-ink); background: none; border: 0; padding: 2px 4px; margin: 0 0 0 -4px; border-radius: var(--r-xs); }
+button.tx-ts { cursor: pointer; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent-ink) 40%, transparent); text-underline-offset: 3px; }
+button.tx-ts:hover { background: var(--accent-soft); }
+.tx-text { max-width: 75ch; font-size: 1rem; line-height: 1.6; color: var(--text); }
 /* slides (under the video) */
 .slides-block { margin: 0 0 var(--sp-6); }
 .slides-block h3 { margin: var(--sp-1) 0 var(--sp-2); font-size: clamp(1.25rem, 1.05rem + .8vw, 1.625rem); }

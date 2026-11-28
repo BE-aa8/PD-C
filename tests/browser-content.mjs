@@ -182,7 +182,13 @@ await page.click('[data-tab="video"]');
 await page.waitForTimeout(400);
 const vcfg = await page.evaluate(async () => import(new URL('js/video.js', location.href)).then((m) => m.VIDEO));
 const vstate = await page.locator('#video-stage').getAttribute('data-state');
-check('Video: placeholder until a YouTube id is set', vcfg.youtubeId ? vstate === 'poster' : (vstate === 'placeholder' && (await page.locator('#video-stage iframe').count()) === 0), `state ${vstate}`);
+check('Video: placeholder without a YouTube id, click-to-load poster with one', vcfg.youtubeId ? vstate === 'poster' : (vstate === 'placeholder' && (await page.locator('#video-stage iframe').count()) === 0), `state ${vstate}`);
+if (vcfg.youtubeId) {
+  const poster = await page.locator('#video-stage img').getAttribute('src');
+  const ytHref = await page.locator('#video-yt').getAttribute('href');
+  check('Video: click-to-load poster for the right video (no YouTube iframe before a click), YouTube link and date shown',
+    poster.includes(`/vi/${vcfg.youtubeId}/`) && (await page.locator('#video-stage iframe').count()) === 0 && ytHref === `https://www.youtube.com/watch?v=${vcfg.youtubeId}` && (await page.locator('#video-date').innerText()).trim() === vcfg.recordedOn, poster);
+}
 // slides viewer under the video (site/js/slides.js)
 const deck = await page.evaluate(async () => import(new URL('js/slides.js', location.href)).then((m) => m.DECK));
 
@@ -208,7 +214,21 @@ check('Slides: every slide image, the PDF and the PPTX are served (200)', slideS
 await page.locator('#transcript summary').click();
 const tOpen = await page.locator('#transcript').evaluate((el) => el.open);
 const tText = await page.locator('#transcript-body').innerText();
-check('Transcript reader opens; empty transcript is labelled, not invented', tOpen && (vcfg.transcript.trim() ? tText.includes(vcfg.transcript.trim().slice(0, 40)) : /Placeholder/.test(tText)), '');
+const txLines = vcfg.transcript.trim() ? vcfg.transcript.trim().split('\n') : [];
+if (txLines.length) {
+  const rows = await page.locator('.tx-list li').evaluateAll((lis) => lis.map((li) => `${li.querySelector('.tx-ts').textContent} ${li.querySelector('.tx-text').textContent}`));
+  check('Transcript: every line of video.js is shown word for word, with its timestamp, in order', tOpen && rows.length === txLines.length && rows.length > 100 && rows.every((r, i) => r === txLines[i]), `${rows.length} of ${txLines.length} lines`);
+  // timestamps seek the video (YouTube is stubbed so the test stays offline)
+  await page.route(/(youtube\.com|youtube-nocookie\.com|ytimg\.com|googlevideo\.com)/, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
+  const row = page.locator('.tx-list li').nth(7);
+  const tSec = +(await row.getAttribute('data-t'));
+  await row.locator('button.tx-ts').click();
+  await page.waitForTimeout(300);
+  const ifr = await page.locator('#video-stage iframe').getAttribute('src').catch(() => '');
+  check('Transcript: clicking a timestamp loads the video at that time', tSec > 0 && ifr.includes(`/embed/${vcfg.youtubeId}`) && ifr.includes(`start=${tSec}`), ifr);
+} else {
+  check('Transcript reader opens; empty transcript is labelled, not invented', tOpen && /Placeholder/.test(tText), '');
+}
 await page.click('[data-tab="refs"]');
 await page.waitForTimeout(400);
 const nSources = await page.evaluate(async () => Object.keys((await import(new URL('js/data.js', location.href))).DATA.sources).length);

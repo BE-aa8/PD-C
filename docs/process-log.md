@@ -529,3 +529,34 @@ Something I learned about process control over these past few weeks has been how
 - Smoke test: 0 failures.
 - No horizontal scroll at 375 px.
 - Screenshots checked at desktop light/dark and on a phone.
+
+### Part 27: The video is published; embedded with its verbatim transcript
+
+**Prompt (verbatim, start):**
+45. "time to add the transcript and embed the yt video: https://www.youtube.com/watch?v=SKINf0_tK18&t=10s" followed by the YouTube transcript as copied. Andrew's answer to Claude's question: recorded on 2026-11-28.
+
+Between prompts 44 and 45, Claude also wrote YouTube titles, a description, and two thumbnail prompts for Gemini. That was chat-only; nothing in the repo changed.
+
+**Plan:** `docs/plan-video-transcript-claude.md`.
+
+**How the transcript was kept verbatim:**
+- YouTube's copy puts a screen-reader duration label after each timestamp, for example `1:011 minute, 1 second um so…`.
+- A script split each line into timestamp and text. It removed only that label, and only after checking the label against the timestamp.
+- Adding each label back reproduced the paste exactly, character for character.
+- 175 lines, from 0:01 "Hey guys, it's Andrew…" to 23:20 "Thanks for watching."
+- YouTube's mishearings ("clawed code", "quad opus", "talc") are left as they are. A note above the transcript explains them.
+
+**What changed:**
+- `site/js/video.js`: the video id, the date and the transcript.
+- `buildVideo()`:
+  - The click-to-load poster is unchanged.
+  - The transcript is shown as timestamped rows, and clicking a time plays the video from that point.
+  - A "Watch on YouTube" link was added.
+- `docs/PROJECT_STATUS.md`: the video, link and transcript rows are marked done.
+
+**Results (local):**
+- `npm test`: 65/65.
+- Content test: 85/85. The new checks cover: the right poster and no iframe before a click; all 175 lines shown word for word in order; a timestamp click loading the video at that time.
+- Accessibility test: no serious or critical issues, including with slow-loading fonts.
+- Smoke test: 0 failures.
+- No horizontal scroll at 375 px. Screenshots checked in dark mode, light mode and at phone width.

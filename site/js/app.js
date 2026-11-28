@@ -1223,26 +1223,49 @@ function buildWorkflow() {
 function buildVideo() {
   const stage = document.getElementById('video-stage');
   const id = VIDEO.youtubeId && /^[\w-]{6,20}$/.test(VIDEO.youtubeId) ? VIDEO.youtubeId : null;
+  // load the YouTube player (and its scripts) only when asked for; `start` is in seconds
+  const play = (start = 0) => {
+    stage.dataset.state = 'playing';
+    stage.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0${start ? `&start=${start}` : ''}" title="Closing the Loop: presentation video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+  };
   if (!id) {
     stage.dataset.state = 'placeholder';
     stage.innerHTML = `<div class="video-ph"><span class="tag">Placeholder</span><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19 15l14 9-14 9z" fill="currentColor"/></svg>
       <p class="video-ph-t">Presentation video: added after recording</p><p class="video-ph-s">The YouTube link and its verbatim auto-generated transcript will appear here.</p></div>`;
   } else {
-    // click to load: the YouTube player (and its scripts) load only when asked for
     stage.dataset.state = 'poster';
     stage.innerHTML = `<button type="button" class="video-poster" id="video-play" aria-label="Play the presentation video (loads YouTube)">
       <img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="" loading="lazy"><span class="video-play-ic" aria-hidden="true">▶</span></button>`;
-    document.getElementById('video-play').addEventListener('click', () => {
-      stage.dataset.state = 'playing';
-      stage.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" title="Closing the Loop: presentation video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
-    });
+    document.getElementById('video-play').addEventListener('click', () => play(0));
+    const yt = document.getElementById('video-yt');
+    yt.href = `https://www.youtube.com/watch?v=${id}`;
+    yt.hidden = false;
   }
   if (VIDEO.recordedOn) document.getElementById('video-date').textContent = VIDEO.recordedOn;
   const tb = document.getElementById('transcript-body');
   const tx = (VIDEO.transcript || '').trim();
-  tb.innerHTML = tx
-    ? tx.split(/\n{2,}/).map((para) => `<p>${esc(para).replace(/\n/g, '<br>')}</p>`).join('')
-    : '<p class="transcript-empty"><span class="tag">Placeholder</span> The YouTube auto-generated transcript will be pasted here verbatim after the video is published.</p>';
+  if (!tx) {
+    tb.innerHTML = '<p class="transcript-empty"><span class="tag">Placeholder</span> The YouTube auto-generated transcript will be pasted here verbatim after the video is published.</p>';
+    return;
+  }
+  const TS = /^(\d{1,2}):(\d{2}) (.*)$/;
+  const lines = tx.split('\n');
+  if (!lines.every((l) => TS.test(l))) { // no timestamps: plain paragraphs
+    tb.innerHTML = tx.split(/\n{2,}/).map((para) => `<p>${esc(para).replace(/\n/g, '<br>')}</p>`).join('');
+    return;
+  }
+  tb.innerHTML = `<p class="tx-note">YouTube's automatic captions, copied word for word. Speech recognition mishears some words (for example "clawed code" and "quad code" for Claude Code, "talc" for τc); they are left as YouTube wrote them.${id ? ' Click a time to play the video from there.' : ''}</p>
+    <ol class="tx-list">${lines.map((l) => {
+      const [, m, sec, text] = l.match(TS);
+      const t = +m * 60 + +sec, ts = `${m}:${sec}`;
+      return `<li data-t="${t}">${id ? `<button type="button" class="tx-ts" data-t="${t}" aria-label="Play from ${ts}">${ts}</button>` : `<span class="tx-ts">${ts}</span>`}<span class="tx-text">${esc(text)}</span></li>`;
+    }).join('')}</ol>`;
+  if (id) tb.addEventListener('click', (e) => {
+    const btn = e.target.closest('button.tx-ts');
+    if (!btn) return;
+    play(+btn.dataset.t);
+    stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
 }
 
 // ------------------------------------------------------------------ SLIDES (site/js/slides.js lists the deck images)

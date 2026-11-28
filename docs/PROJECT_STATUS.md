@@ -72,8 +72,8 @@ critique *before* anything was built. That did not happen. The same model that w
 | W5 | Technical documentation pages | 🟡 | Equations and tables exist across tabs; no narrative on assumptions/limitations. |
 | W6 | AI development process page | ⬜ | Placeholder text only. |
 | W7 | Model comparison page | ⬜ | Requires the Gemini implementation. |
-| W8 | YouTube link section | 🟡 | Placeholder "_TBD_". |
-| W9 | Verbatim transcript section | 🟡 | Placeholder. Must be filled with the *real* YouTube auto-transcript only. |
+| W8 | YouTube link section | ✅ | Video SKINf0_tK18 embedded (click-to-load) on the Video & Transcript tab, 2026-11-28. |
+| W9 | Verbatim transcript section | ✅ | Real YouTube auto-generated transcript, 175 timestamped lines, word for word (process log Part 27). |
 | W10 | References & attribution page | 🟡 | List exists; several items marked [TO VERIFY]; no contributions section. |
 | W11 | Disclaimer on every page | ✅ | Shown at the top of the app. |
 
@@ -105,10 +105,10 @@ assignment text has not been provided to the agent** (👤 needed for the final 
 | A5 | Independent implementation by model 2 (Gemini) | ⬜ | Needs Gemini access (👤). |
 | A6 | Reproducible comparison (doc + website section) | ⬜ | Depends on A5. |
 | A7 | Public website (simulator + documentation) | ⬜ | Deployment 👤 + content. |
-| A8 | YouTube presentation | ⬜ | Andrew records. |
-| A9 | YouTube link on website | ⬜ | After A8. |
+| A8 | YouTube presentation | ✅ | Recorded and published by Andrew, 2026-11-28. |
+| A9 | YouTube link on website | ✅ | Embedded, plus a "Watch on YouTube" link. |
 | A10 | Practice transcript + AI critique in YouTube comments | ⬜ | After A8; Andrew posts. |
-| A11 | Verbatim auto-generated transcript on website | ⬜ | After A8. |
+| A11 | Verbatim auto-generated transcript on website | ✅ | Timestamps seek the video. |
 | A12 | PRESENTATION_OUTLINE / SCRIPT, AI_DEVELOPMENT_HISTORY, REFERENCES, CONTRIBUTIONS | ⬜ | Agent can draft; Andrew owns content. |
 | A13 | FINAL_SUBMISSION_CHECKLIST.md | ⬜ | Needs the verbatim assignment text for accuracy. |
 | A14 | Group member contributions | ⬜ 👤 | Is this an individual or group project? |
