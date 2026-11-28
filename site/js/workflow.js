@@ -48,8 +48,8 @@ export const STAGES = [
     "path": "docs/process-log.md"
    },
    {
-    "label": "Project audit",
-    "path": "docs/PROJECT_STATUS.md"
+    "label": "Project audit (2026-11-18)",
+    "path": "docs/audit-2026-11-18-claude.md"
    }
   ]
  },
@@ -303,7 +303,7 @@ export const COMPARE = [
  ],
  [
   "Unverified-source flags",
-  "kept",
+  "kept at build time (all resolved later)",
   "removed",
   "page text"
  ],

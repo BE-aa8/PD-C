@@ -78,3 +78,5 @@ All checks were run against the Python reference (`ap-sim/`). Commands and outpu
 - **Then step 5 of the workflow plan:** `tools/build_expected.py` → `tests/expected.json`, `tests/model.test.mjs`, `tests/browser-smoke.mjs`, `docs/build-prompt.md`.
 
 **Later resolution (2026-11-27):** row 25 (τc guidelines, accepted "as [TO VERIFY]") was settled by Andrew: the site keeps only the SIMC guideline τc = θ, cited to Skogestad (2003), *J. Process Control* 13:291–309 (citation confirmed online), and drops the "τc > 0.8θ (Rivera et al., 1986)" part, which could not be confirmed. See process log Part 24. The table above is left as originally approved.
+
+**Later resolution (2026-11-27), row 9:** the IMC row numbers in Seborg Table 12.1, noted as unverified in row 9, were checked by Andrew in the book ("Book confirms both", process log Part 24).

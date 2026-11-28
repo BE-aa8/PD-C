@@ -533,9 +533,11 @@ Something I learned about process control over these past few weeks has been how
 ### Part 27: The video is published; embedded with its verbatim transcript
 
 **Prompt (verbatim, start):**
-45. "time to add the transcript and embed the yt video: https://www.youtube.com/watch?v=SKINf0_tK18&t=10s" followed by the YouTube transcript as copied. Andrew's answer to Claude's question: recorded on 2026-11-28.
+47. "time to add the transcript and embed the yt video: https://www.youtube.com/watch?v=SKINf0_tK18&t=10s" followed by the YouTube transcript as copied. Andrew's answer to Claude's question: recorded on 2026-11-28.
 
-Between prompts 44 and 45, Claude also wrote YouTube titles, a description, and two thumbnail prompts for Gemini. That was chat-only; nothing in the repo changed.
+Before that, two chat-only prompts (nothing in the repo changed):
+- 45. "can you create a good yt title and description for the video" (Claude wrote a title, two alternatives and a description with chapters).
+- 46. "give 3 titles, and also provide 2 different prompts for Gemini to make thumbnails. make sure they are professional but also are fun and grab the attention of viewers. make the thumbnails relevant to the theme of the website." (Claude wrote three titles and two thumbnail prompts in the site's colours.)
 
 **Plan:** `docs/plan-video-transcript-claude.md`.
 
@@ -560,3 +562,66 @@ Between prompts 44 and 45, Claude also wrote YouTube titles, a description, and 
 - Accessibility test: no serious or critical issues, including with slow-loading fonts.
 - Smoke test: 0 failures.
 - No horizontal scroll at 375 px. Screenshots checked in dark mode, light mode and at phone width.
+
+### Part 28: Final completion audit
+
+**Prompt (verbatim, start; the full prompt is long):** 48. "FINAL PROJECT COMPLETION: FULL AUDIT, QUALITY CONTROL & LOOSE-ENDS REVIEW. I believe this project is nearly finished. I now want you to conduct a comprehensive final review and bring it to a genuinely complete, polished, submission-ready state. …" The prompt asked for ten things:
+- a full functionality audit;
+- an engineering-correctness check;
+- a content check;
+- a design check;
+- a code check;
+- testing;
+- a requirement-by-requirement assignment checklist;
+- the fixes;
+- a final report;
+- no fabrication anywhere.
+
+**Plan:** `docs/plan-final-audit-claude.md`.
+
+**What the audit checked:**
+- **Functionality:** a full Playwright click-through of every visible control on all 7 tabs. The 245 controls were:
+  - 17 sliders, 1 number box, 9 menus (every option), 7 toggles;
+  - 232 buttons, including all 175 transcript timestamps, the 3D tools and the slide viewer.
+
+  Also checked on desktop and phone, in both themes: console errors, failed requests, broken images, KaTeX errors,
+  unlabelled controls, horizontal overflow, every link.
+- **Engineering:** an independent re-derivation of 31 quantities with scipy (analytic linearization, LSODA, a
+  separately written discrete PID, its own least-squares SOPDT fit and frequency response). All agree with the site:
+  31/31, closed-loop peaks and nadirs within 0.1%.
+- **Content:** every tab's rendered text was read in full.
+
+**Issues found and fixed:**
+- **High:** `docs/PROJECT_STATUS.md`, which the site links to, was the 2026-11-18 audit and said there was no Gemini
+  work and no deployment. It is now a current requirement checklist with test results. The old audit is kept as
+  `docs/audit-2026-11-18-claude.md`, and the timeline link now points to it.
+- **Medium:**
+  - the AI tab said "All 35 prompts". It now says 48, and a new content check ties that number to this log;
+  - the two chat-only prompts (45, 46) were recorded, so the video prompt became 47;
+  - a sentence fragment, "Row numbers in Table 12.1.", left on the Control Design IMC card was removed;
+  - the README had no links: it now has the site, video, slides, workflow, repository map and test commands.
+- **Low:**
+  - on phones, the 3D tool strip hid half its tools behind an invisible scrollbar; it is now a 4 × 2 grid;
+  - the YouTube iframe raised a browser warning (allowfullscreen duplicated the allow list);
+  - the static "Recorded: not yet" fallback was corrected;
+  - the contributions text is now in the past tense;
+  - the comparison row "Unverified-source flags: kept" now reads "kept at build time (all resolved later)";
+  - the decision table now says its reasoning is as written at the time;
+  - the row-9 Table 12.1 resolution was added to `docs/critique-decisions.md`;
+  - resolved [TO VERIFY] comments in `ap-sim` (Battelino, Skogestad) were updated with no change to any number
+    (`build_data --check` and `build_expected --check` still pass).
+
+**Not changed, and why:**
+- The 26 decision rows keep their original reasoning; they are a dated record.
+- `ap-sim/app.py` (the legacy Streamlit app, not deployed) still flags Bergman et al. (1979) as unverified, which is
+  true.
+- A WebGL "GPU stall due to ReadPixels" warning appears only with the software renderer used for testing.
+
+**Results:**
+- `npm test`: 65/65.
+- `pytest`: 100/100.
+- Both drift checks pass.
+- Content test: 86/86 in light and dark.
+- Accessibility test: 0 violations at any severity, including with slow fonts.
+- Smoke test: 0 failures.
+- Sweep: no errors, no failed requests, no overflow.

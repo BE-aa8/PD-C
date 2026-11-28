@@ -178,6 +178,10 @@ const cmpDoc = readFileSync(join(ROOT, 'docs/comparison.md'), 'utf8');
 const myConcl = cmpDoc.split('## 7. My conclusions (Andrew)')[1].split('\n\n')[1].trim();
 const ownTxt = (await page.locator('#own-conclusions blockquote').innerText()).trim();
 check('Andrew\'s conclusions on the site = docs/comparison.md §7 (his words), credited, no placeholders left', ownTxt === myConcl && (await page.locator('.own-box figcaption').allInnerTexts()).every((x) => x.includes('Andrew')) && (await page.locator('.own-box').count()) === 2 && !/To be written/.test(await page.locator('#panel-ai').textContent()), ownTxt.slice(0, 40));
+// prompt count on the AI tab = highest verbatim prompt number in the process log
+const promptNums = [...logTxt.matchAll(/(?:^|\*\* |- )(\d{1,2})\. ["“]/gm)].map((m) => +m[1]);
+const shownCount = +(await page.locator('#ai-prompt-count').textContent());
+check('AI tab prompt count = prompts numbered in docs/process-log.md', shownCount === Math.max(...promptNums), `site ${shownCount}, log ${Math.max(...promptNums)}`);
 await page.click('[data-tab="video"]');
 await page.waitForTimeout(400);
 const vcfg = await page.evaluate(async () => import(new URL('js/video.js', location.href)).then((m) => m.VIDEO));

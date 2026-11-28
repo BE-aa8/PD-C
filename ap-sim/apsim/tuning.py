@@ -7,8 +7,8 @@
   FOPDT -> PID (1/1 Pade of the delay):
       Kc = (tau+theta/2)/[K (tau_c+theta/2)],  tauI = tau+theta/2,  tauD = tau theta/(2 tau+theta)
 
-Default tau_c = theta_total (Skogestad's SIMC guideline, as discussed in Seborg Ch. 12)
-[TO VERIFY page reference against the textbook].
+Default tau_c = theta_total (Skogestad's SIMC guideline: Skogestad 2003, J. Process Control 13:291-309;
+citation confirmed 2026-11-27, process log Part 24).
 
 Sign: K < 0 -> Kc < 0.  With e = r - m, high glucose gives e < 0, Kc e > 0 -> more insulin.
 """

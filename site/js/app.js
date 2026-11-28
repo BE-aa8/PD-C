@@ -1053,7 +1053,7 @@ function renderDesign() {
         ? [`K_c=\\frac{\\tau}{K(\\tau_c+\\theta)}=\\frac{${tf(rm.tau, 2)}}{${tf(rm.K, 3)}(${tf(state.tau_c, 0)}+${tf(tu.theta_total, 2)})}=${tf(tu.Kc, 4)}`, `\\tau_I=\\tau=${tf(tu.tauI, 2)},\\quad \\tau_D=0`]
         : [`K_c=\\frac{\\tau+\\theta/2}{K(\\tau_c+\\theta/2)}=${tf(tu.Kc, 4)}`, `\\tau_I=\\tau+\\tfrac{\\theta}{2}=${tf(tu.tauI, 2)},\\quad \\tau_D=\\frac{\\tau\\theta}{2\\tau+\\theta}=${tf(tu.tauD, 2)}`],
     units: 'K_c in (mU/min)/(mg/dL); τ_I, τ_D, τ_c in min.',
-    meaning: `K_c is negative because insulin lowers glucose (reverse-acting process). Larger τ_c → smaller |K_c| → slower, safer loop. Mode ${state.mode}${state.mode !== 'PID' ? ' drops ' + (state.mode === 'P' ? 'the integral and derivative' : 'the derivative') : ''}. Row numbers in Table 12.1.`,
+    meaning: `K_c is negative because insulin lowers glucose (reverse-acting process). Larger τ_c → smaller |K_c| → slower, safer loop. Mode ${state.mode}${state.mode !== 'PID' ? ' drops ' + (state.mode === 'P' ? 'the integral and derivative' : 'the derivative') : ''}.`,
     extra: state.tuning_mode === 'manual' && fin(state.Kc_man) ? `<div class="callout"><h4>Manual mode: IMC values above are for reference</h4>${T(`\\text{loop uses } K_c=${tf(state.Kc_man, 3)},\\;\\tau_I=${tf(state.tauI_man, 1)},\\;\\tau_D=${tf(state.tauD_man, 1)};\\quad \\frac{K_c}{K_{c,IMC}}=${tf(state.Kc_man / tu.Kc, 2)}`)}<p class="units"><b>Units:</b> K_c in (mU/min)/(mg/dL); τ in min; the ratio is dimensionless.</p><p class="meaning"><b>Meaning:</b> ${state.Kc_man > 0 ? 'K<sub>c</sub> > 0 has the wrong sign for this reverse-acting process: the loop adds insulin when glucose is low.' : state.Kc_man / tu.Kc > 1 ? 'Your loop is more aggressive than the IMC design (larger |K<sub>c</sub>|): faster, but closer to oscillation.' : 'Your loop is gentler than the IMC design (smaller |K<sub>c</sub>|): slower, but more robust to the sensor delay.'}</p></div>` : '',
   }));
   set('ds-pid', card({
@@ -1208,7 +1208,7 @@ function buildWorkflow() {
   DECISIONS.forEach((d) => { const k = kind(shown(d)); counts[k] = (counts[k] || 0) + 1; });
   document.getElementById('ai-dec-summary').innerHTML = Object.entries(counts).map(([k, n]) =>
     `<div class="metric ${k === 'Rejected' ? 'bad' : ''}"><div class="mv">${n}</div><div class="ml">${esc(k)}</div></div>`).join('') +
-    `<p class="strip-note">All ${DECISIONS.length} rows approved by Andrew: “approve all, go with your recommendations.” Source: ${docLink({ label: 'docs/critique-decisions.md', path: 'docs/critique-decisions.md' })}</p>`;
+    `<p class="strip-note">All ${DECISIONS.length} rows approved by Andrew: “approve all, go with your recommendations.” Source: ${docLink({ label: 'docs/critique-decisions.md', path: 'docs/critique-decisions.md' })}. The reasoning is shown as written when each decision was made (2026-11-18); points settled later, such as the Table 12.1 and τc-guideline checks against the textbook, are recorded at the end of that file.</p>`;
   document.getElementById('ai-dec-table').innerHTML = `<thead><tr><th>#</th><th>Gemini's suggestion</th><th>Severity</th><th>Decision</th><th>Reasoning</th></tr></thead><tbody>${
     DECISIONS.map((d) => `<tr data-kind="${esc(kind(shown(d)))}"><td class="num">${d.n}</td><td>${esc(d.s)}</td><td>${esc(d.sev)}</td><td><b>${esc(shown(d))}</b></td><td>${esc(d.r)}</td></tr>`).join('')}</tbody>`;
   document.getElementById('ai-cmp-table').innerHTML = `<thead><tr><th>Measure</th><th>Claude (Opus 5.5)</th><th>Gemini (3.8-flash)</th><th>Source</th></tr></thead><tbody>${
@@ -1226,7 +1226,7 @@ function buildVideo() {
   // load the YouTube player (and its scripts) only when asked for; `start` is in seconds
   const play = (start = 0) => {
     stage.dataset.state = 'playing';
-    stage.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0${start ? `&start=${start}` : ''}" title="Closing the Loop: presentation video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+    stage.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0${start ? `&start=${start}` : ''}" title="Closing the Loop: presentation video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen"></iframe>`;
   };
   if (!id) {
     stage.dataset.state = 'placeholder';

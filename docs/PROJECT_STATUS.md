@@ -1,123 +1,113 @@
-# PROJECT STATUS — Closing the Loop
+# Project status: Closing the Loop
 
-> **Update 2026-11-18 (workflow change):** the project now follows the separations pathway exactly
-> (`docs/plan-gemini-workflow-claude.md`): a static JS site on Netlify built by Claude (`site/`) and by
-> Gemini via GitHub Actions (`site/gemini/`), graded by shared tests generated from the Python reference
-> in `ap-sim/`. Gemini's critique is pasted from the Gemini web app. Rows below about Streamlit Cloud
-> deployment and the Phase A local runner are superseded. Paths in this audit refer to `ap-sim/`.
+**Status as of 2026-11-28: complete and deployed.** This file replaces the first audit, dated 2026-11-18. That audit was
+written before the critique, the second build and the deployment existed. It is kept unchanged in
+[`audit-2026-11-18-claude.md`](audit-2026-11-18-claude.md). How this status was established is in
+[`plan-final-audit-claude.md`](plan-final-audit-claude.md) and process log Part 28.
 
-**Audit date:** 2026-11-18 (statuses updated after Phase A) · **Audited commit:** `8087a7d` on `claude/pancreas-control-simulator-w1e3tl`
-**Method:** the repository and history were inspected directly. Statuses below come from what
-was observed, not from earlier progress reports.
+- **Live site:** https://be-aa8.github.io/PD-C/. It is deployed by CI from `main` after every test passes, and the live
+  site is then tested again.
+- **Video:** https://www.youtube.com/watch?v=SKINf0_tK18 (recorded 2026-11-28).
+- **Source:** https://github.com/BE-aa8/PD-C (public).
 
-Status key: ✅ Complete (verified) · 🟡 Partial · ⬜ Not started · 🔴 Broken / wrong · 🔍 Needs validation · 👤 Needs Andrew
+> Educational process-control model of an illustrative textbook patient. Not medical advice. Not for dosing decisions.
 
----
+Key: ✅ complete · 👤 needs Andrew (outside the repository)
 
-## 1. What the repository actually contains
+## 1. Assignment requirements (`context/assignment.md`)
 
-| Fact | Observation |
+| # | Requirement | Status | Where |
+|---|---|---|---|
+| 1 | Publicly accessible website demo and documentation | ✅ | GitHub Pages, 7 tabs; CI tests the live site after each deploy |
+| 2 | YouTube video of the presentation, linked on the site | ✅ | Video & Transcript tab: embedded player and a "Watch on YouTube" link |
+| 3 | Verbatim YouTube auto-generated transcript, viewable on the site | ✅ | Same tab: 175 timestamped lines, word for word (process log Part 27 explains how this was checked) |
+| 4a | Overview; demo of what was created | ✅ | Overview tab; Simulator, Theory and Control Design tabs; video |
+| 4b | Clearly an AI project exploring AI capabilities | ✅ | Overview "How it was built"; AI Workflow tab; `docs/comparison.md` |
+| 4c | Process: models, services, prompts | ✅ | AI Workflow tab (models, 7-stage timeline, key prompts); References §04; `docs/process-log.md` (all 48 prompts) |
+| 4d | Planning and iteration, with Andrew's guidance and reasoning | ✅ | AI Workflow timeline and decision table; `docs/critique-decisions.md`; `docs/plan-*.md` |
+| 4e | Key technical details from the course | ✅ | Theory and Control Design tabs (every equation with units and meaning); Overview "Course concepts" |
+| 4f | What was learned and what to learn next | ✅ | AI Workflow tab, "In Andrew's words" (his own text); slide 17; video at 12:13 |
+| 4g | Attribution and references | ✅ | References tab; `docs/comparison.md` |
+| 5a | Plan from one model, critique by a different model | ✅ | `docs/plan-v1-claude.md` (Claude Opus 5.5) → `docs/critique-v1-gemini.md` (Gemini 3.5 Flash) |
+| 5b | Justify each accept or reject decision | ✅ | `docs/critique-decisions.md`: 26 rows, each with its reasoning, all approved by Andrew |
+| 5c | Implement with at least 2 different AI models and compare | ✅ | Claude build at the site root; Gemini build frozen at `/gemini/`; `docs/comparison.md`; AI Workflow comparison table |
+| 6 | Attribution, and what each group member contributed | ✅ | References §05 (individual project: Andrew's role and each model's role) |
+| R | Rubric artefacts: plan and comparison, web app, PowerPoint | ✅ | Plans and comparison in `docs/`; the site; the 18-slide deck on the Video tab (PDF and PPTX downloads) |
+| P | Chat history and prompts (syllabus AI policy) | ✅ | `docs/process-log.md`, Parts 1–28, prompts 1–48. Part 1 notes that the conversation that produced plan v1 is not in the repository. |
+
+## 2. Verification (2026-11-28, final audit)
+
+| Check | Result |
 |---|---|
-| Branches | `main` (only the initial README commit) and `claude/pancreas-control-simulator-w1e3tl` (all work). Nothing else, locally or on the remote. |
-| Gemini work | **None.** No Gemini branch, directory, commit, PR or issue in `BE-aa8/PD-C`. The other repos the account can see (`seperations`, `agen_rh`, `startup`) are, by name, unrelated; they were not opened. |
-| PRs / issues | None. |
-| Commits | 11, all made by Claude Code (Claude Opus 5.5) in a single session on 2026-11-18. |
-| Deployment | **No deployment found.** No Streamlit Cloud URL is recorded anywhere, and the work has not been merged into `main`. |
-| Tests | `pytest`: **67 passed** (re-run during this audit). |
-| Code size | ~2,000 lines across `apsim/` and `app.py`; 9 test files. |
-| Conversation history | Only this conversation is available to the agent. Any Gemini chats or other planning conversations Andrew had elsewhere are not visible here. |
+| `npm test`: JS engine vs `tests/expected.json` | 65/65 pass |
+| `pytest`: Python reference (`ap-sim/`) | 100/100 pass |
+| `data.js` and `expected.json` regenerate identically from the reference | pass |
+| Content test (`tests/browser-content.mjs`), light and dark | 86/86 pass |
+| Accessibility (axe-core 4.10.2), 7 tabs, desktop and phone, light and dark, also with slow fonts | 0 violations at any severity |
+| Smoke test | 7 tabs, 9 sliders, 0 failures |
+| Full click-through sweep (every visible control on every tab, desktop and phone, both themes) | no page errors, no failed requests, no broken images, no KaTeX errors, no unlabelled controls, no horizontal overflow |
+| Independent engineering re-derivation (scipy, written from the model and spec, not from the site code) | 31/31 quantities agree; see §3 |
+| CI on `main`, including the live-site tests | green |
 
-**Process deviation that must be disclosed:** the plan said it would go to a second model for
-critique *before* anything was built. That did not happen. The same model that wrote the plan
-(Claude Opus 5.5) built the whole implementation immediately afterwards. So, as of this audit,
-**the multi-AI requirement is unmet**: there is one planner/implementer and no critic.
+## 3. Engineering: verified vs assumed
 
----
+**Verified independently.** Each quantity was re-derived with a different method and agrees with the site.
+- Basal insulin U_b = nI_bV₁ = 16.668 mU/min.
+- Gains and lags:
+  - process gain K_p = −G_b p₃/(p₁p₂nV₁) = −4.5063 (mg/dL)/(mU/min);
+  - disturbance gain K_d = 34.80 min;
+  - feedforward gain K_f = −K_d/K_p = 7.7227;
+  - lags of 34.80, 35.28 and 10.80 min;
+  - authority ratio 0.1695.
+- Bolus = 1390.09 mU.
+- Open-loop meal peak 166.15 mg/dL at about 26 min; nonlinear gain −4.2688 at ΔU = +1.
+- IMC tuning:
+  - an independent least-squares SOPDT fit gives K = −4.271, τ₁ = τ₂ = 35.15 min, θ = 8.66 min;
+  - these give K_c = −0.4256, τ_I = 70.30 min, τ_D = 17.57 min.
+- Margins:
+  - phase margin 74.0° without the sensor delay and 58.6° with it;
+  - gain margin 23.06 and 3.47;
+  - maximum tolerable delay 48.1 min.
+- Closed-loop runs, simulated with LSODA and a separately written discrete PID; all agree within 0.1%:
+  - feedback only 163.4 / 49.4 mg/dL;
+  - bolus at the meal 138.9 / 48.6;
+  - 15-min pre-bolus 107.9 / 62.2;
+  - windup nadirs 39.1 (anti-windup off) / 45.0 (clamping) / 43.3 (back-calculation).
 
-## 2. Simulator: technical status
+**Taken from the textbook.** These were checked by Andrew in the book; the repository can't verify them on its own.
+- Parameter values: Seborg Ex. 23.3.
+- The 54–144 mg/dL band.
+- The 10-min sensor delay: Exer. 23.6(e).
+- Ts = 5 min: Sec. 23.2.
+- The Table 12.1 IMC rows.
+- The Ch. 14 margin ranges: PM ≥ 30°, GM ≥ 1.7.
+- The β-cell sentence: Ch. 23.
 
-| # | Item | Status | Evidence / notes |
-|---|---|---|---|
-| T1 | Parameters with units and sources (`params.py`) | ✅ | Single source of truth; U_basal derived. |
-| T2 | Nonlinear ODE model | ✅ | Matches analytic open-loop solution to < 0.01 mg/dL; LSODA to < 0.05. |
-| T3 | Fixed-step RK4 engine, documented event order, integer sample timing | ✅ | dt-convergence test; deterministic. |
-| T4 | Linearization, A/B/C, Gp(s), Gd(s) | ✅ | A matches a finite-difference Jacobian; Kp = −4.506. |
-| T5 | Nonlinear-gain demonstration | ✅ | −4.27 at ΔU = +1. |
-| T6 | Half rule + LSQ FOPDT/SOPDT fits | ✅ | All within plan tolerances. |
-| T7 | IMC tuning formulas | 🔍 👤 | Implemented and internally tested, but **never checked against Seborg Table 12.1** (no PDF available). The τc default guideline is also uncited. |
-| T8 | Discrete PID (derivative on measurement, filter, bumpless) | ✅ | Unit tests incl. no derivative kick. |
-| T9 | Anti-windup (clamp with Kc·e sign logic, back-calculation, off) | ✅ | Tests for both saturation directions. |
-| T10 | Sensor: delay, lag, noise, stuck, drift, dropout | ✅ | Delay-shift test; dropout holds output. |
-| T11 | Meals, multi-meal, insulin-sensitivity mismatch | ✅ | |
-| T12 | Static FF bolus, pre-bolus, estimate error, integral suspend | ✅ | Bolus total to < 1 mU; §14 targets reproduced. |
-| T13 | Lead-lag dynamic FF (stretch) | 🟡 | Implemented, **no dedicated test**, τ_lg is an agent-chosen value. |
-| T14 | Metrics (TIR, IAE/ISE, insulin, settling) | ✅ | Small bug noted in §4 (B3). |
-| T15 | Stability margins, Bode/Nyquist, max delay | ✅ | Reproduces plan references (PM 68°/74°, 33.4/48.1 min). |
-| T16 | Empirical delay sweep | ✅ 🔍 | Works. Gives 43.2 vs 48.1 min analytic; the 5–6 min gap is explained only qualitatively. |
-| T17 | Ts/2 discrepancy | 🟡 | Default now **excludes** Ts/2 to match the references (Andrew's decision). Consequence: the tuning ignores ~2.5 min of real sampling delay, and the stability tab's continuous margins are optimistic. This is documented, but not yet shown side by side in the app. |
-| T18 | Presets (16) | ✅ | All run; all U within [0, 115]. |
-| T19 | MPC (stretch) | ✅ 🔍 | Works; 5 tests. Weights were tuned by the agent on one preset; cross-checked on others. |
-| T20 | IOB limit (plan §7.3, stretch) | ⬜ | Not built. |
-| T21 | Ex. 23.7 linear TF patient (plan Phase 8, stretch) | ⬜ 👤 | Not built; needs the TFs verified from the textbook. |
-| T22 | Model-validity warning at extreme states | ⬜ | e.g. a +30 mg/dL/h drift fault drives true glucose to 12.5 mg/dL with no warning. The guard only fires at G ≤ 0. |
+**Documented project choices (not from a source):**
+- the 40 mg/dL model-validity display threshold;
+- the MPC weights;
+- τc = 20 min for the presets;
+- Ts/2 excluded from θ by default (Andrew's decision).
 
-## 3. App / website status
+**Documented model note:** the textbook prints p₃ in 1/min. Dimensional consistency needs 1/min² per (mU/L); the value
+is unchanged (Theory tab, card 02).
 
-| # | Item | Status | Notes |
-|---|---|---|---|
-| W1 | Streamlit app runs locally; all presets render | ✅ | Verified with `streamlit.testing.AppTest` + screenshot. |
-| W2 | Public deployment | ⬜ 👤 | Needs Andrew's Streamlit Cloud account. Repo is public, which is good. |
-| W3 | Tabs: Simulation, Model, Reduction, Tuning & Stability, Compare, About | 🟡 | Functional but plain. Information hierarchy is weak (one long sidebar, ~45 controls, no grouping into "basic/advanced"). |
-| W4 | Project overview page | ⬜ | Only a title + caption. |
-| W5 | Technical documentation pages | 🟡 | Equations and tables exist across tabs; no narrative on assumptions/limitations. |
-| W6 | AI development process page | ⬜ | Placeholder text only. |
-| W7 | Model comparison page | ⬜ | Requires the Gemini implementation. |
-| W8 | YouTube link section | ✅ | Video SKINf0_tK18 embedded (click-to-load) on the Video & Transcript tab, 2026-11-28. |
-| W9 | Verbatim transcript section | ✅ | Real YouTube auto-generated transcript, 175 timestamped lines, word for word (process log Part 27). |
-| W10 | References & attribution page | 🟡 | List exists; several items marked [TO VERIFY]; no contributions section. |
-| W11 | Disclaimer on every page | ✅ | Shown at the top of the app. |
+## 4. Still needs Andrew (outside the repository)
 
-## 4. Problems found during this audit
+1. **Submit on Canvas** (or wherever the course collects it): the live-site URL, the YouTube URL and the repository URL.
+2. **The in-class presentation and the technical Q&A** (25% + 25% of the rubric).
+3. **Optional:** Prof. Co suggested (lecture 9) transcribing a practice run and asking an AI for presentation tips. It
+   is a tip, not an assignment requirement, and has not been done.
+4. **Book-only facts** (§3, "Taken from the textbook"): be ready to show the textbook page if asked. Andrew has already
+   checked them against the book.
 
-| # | Problem | Severity | Status |
-|---|---|---|---|
-| B1 | Tuning & Stability tab shows margins for the *PID design* even when MPC or open loop is the selected controller. This is misleading in a demo. | Medium | ✅ fixed (Phase A) |
-| B2 | If `margins()` throws, the "Run empirical delay sweep" button then references an undefined `m0` → crash. | Low | ✅ fixed (Phase A) |
-| B3 | `metrics.py` hard-codes `115.0` for "time at U_max" instead of `params.U_max`. | Low | ✅ fixed (Phase A) |
-| B4 | No warning when glucose leaves a physiologically meaningful range (T22). | Medium (demo credibility) | ✅ fixed (Phase A; 40 mg/dL threshold is an agent choice) |
-| B5 | Stability tab uses the *actual* sensor-delay slider, while tuning can use a different "design delay". This is correct, but the two aren't labelled clearly. | Low | 🔍 |
-| B6 | The windup demo contrast is weak (nadir 39.1 vs 45.0). It works, but is underwhelming for a presentation. | Low | 🔍 👤 |
-| B7 | Ex. 23.6(d) (no delay, τc = 20) leaves the band (peak 150.8). This may be correct physics, but it should be checked against the solutions manual / Andrew's hand work. | Medium | 🔍 👤 |
-| B8 | Lead-lag FF has no test. | Low | ✅ tested (Phase A); found it over-delivers with the default lead/lag |
-| B9 | Plan §19 asked for a critique *before* the build; the build happened first. This is a process issue, not a code bug, and must be stated honestly in AI_MODEL_CRITIQUE.md / AI_DEVELOPMENT_HISTORY.md. | High (grading) | 🔴 |
+## 5. Known limitations (stated on the site)
 
-## 5. Assignment deliverables
-
-Requirements as stated by Andrew in the completion directive. **The professor's verbatim
-assignment text has not been provided to the agent** (👤 needed for the final checklist).
-
-| # | Deliverable | Status | Blocker |
-|---|---|---|---|
-| A1 | Plan from model 1 (Claude Opus 5.5) | ✅ | Archived verbatim in `docs/PLAN_v1_claude.md` (Phase A). |
-| A2 | Critique by a different model (Gemini) | 🟡 | Prompt + runner ready (`ai/`); Andrew runs Gemini. |
-| A3 | Accept/reject decisions with reasoning (`AI_MODEL_CRITIQUE.md`) | ⬜ | Depends on A2; decisions must be Andrew's. |
-| A4 | Implementation by model 1 (Claude) | ✅ | This branch. |
-| A5 | Independent implementation by model 2 (Gemini) | ⬜ | Needs Gemini access (👤). |
-| A6 | Reproducible comparison (doc + website section) | ⬜ | Depends on A5. |
-| A7 | Public website (simulator + documentation) | ⬜ | Deployment 👤 + content. |
-| A8 | YouTube presentation | ✅ | Recorded and published by Andrew, 2026-11-28. |
-| A9 | YouTube link on website | ✅ | Embedded, plus a "Watch on YouTube" link. |
-| A10 | Practice transcript + AI critique in YouTube comments | ⬜ | After A8; Andrew posts. |
-| A11 | Verbatim auto-generated transcript on website | ✅ | Timestamps seek the video. |
-| A12 | PRESENTATION_OUTLINE / SCRIPT, AI_DEVELOPMENT_HISTORY, REFERENCES, CONTRIBUTIONS | ⬜ | Agent can draft; Andrew owns content. |
-| A13 | FINAL_SUBMISSION_CHECKLIST.md | ⬜ | Needs the verbatim assignment text for accuracy. |
-| A14 | Group member contributions | ⬜ 👤 | Is this an individual or group project? |
-| A15 | In-class / final-exam presentation prep | ⬜ | |
-
-## 6. Required vs optional
-
-**Required for the assignment:** A1–A15, a working public simulator (T1–T19 core plus W1–W11),
-and an honest record of the process.
-
-**Optional / stretch:** MPC (done), lead-lag FF (done, untested), IOB limit, Ex. 23.7 TF patient,
-ZN/Cohen–Coon comparison (done), UI polish beyond clarity.
+- Minimal model: the meal appears in the blood instantly, insulin absorption is lumped, and there is no glucagon.
+  Results below about 40 mg/dL are qualitative.
+- Stability margins are continuous-time estimates. The sampled loop tolerates less delay: 43.4 min against 48.1 min.
+- MPC is shown as precomputed Python results; it is not run in the browser.
+- The live 3D viewer falls back to still images on browsers without hardware graphics (by design; see process log
+  Part 19).
+- `ap-sim/app.py` is the original Streamlit app from before the static-site workflow. It isn't deployed, and it still
+  lists one unverified secondary reference (Bergman et al., 1979) that the website doesn't use.

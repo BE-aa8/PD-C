@@ -596,9 +596,8 @@ select {
 }
 @media (max-width: 560px) {
   .viewer { grid-template-columns: minmax(0, 1fr); padding: var(--sp-2); }
-  .viewer-rail { flex-direction: row; overflow-x: auto; scrollbar-width: none; order: 2; }
-  .viewer-rail::-webkit-scrollbar { display: none; }
-  .tool { width: 64px; flex: 0 0 auto; }
+  .viewer-rail { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); order: 2; }
+  .tool { width: auto; min-width: 0; }
   .organ-stage { height: 360px; }
   .concepts { grid-template-columns: minmax(0, 1fr); }
   .hotspot .hs-label { display: none; }

@@ -42,10 +42,10 @@ PARAM_TABLE: dict[str, ParamInfo] = {
     "sensor_delay": ParamInfo(10.0, "min", "Default CGM delay", "Seborg et al., 4th ed., Exercise 23.6(e)"),
 }
 
-# Secondary clinical band -- label "to verify before citing" (Battelino et al., 2019).
+# Secondary clinical band (Battelino et al., 2019; citation confirmed 2026-11-27, process log Part 24).
 CLINICAL_BAND = (70.0, 180.0)
 CLINICAL_BAND_SOURCE = ("International consensus time-in-range 70-180 mg/dL "
-                        "(Battelino et al., Diabetes Care, 2019) [TO VERIFY before citing]")
+                        "(Battelino et al., Diabetes Care 2019;42(8):1593-1603)")
 
 
 @dataclass(frozen=True)

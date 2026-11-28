@@ -406,7 +406,7 @@ with tabs[5]:
 - Bequette (2002): model source cited in Seborg Example 23.3 *(full citation from Seborg's reference list)*.
 - Bergman et al. (1979): minimal model *[TO VERIFY]*.
 - Doyle III et al. (2014), as cited in Seborg Sec. 23.2.
-- Skogestad (2003), *J. Process Control*: half rule / SIMC *[TO VERIFY]*.
+- Skogestad (2003), *J. Process Control* 13:291–309: half rule / SIMC.
 - """ + CLINICAL_BAND_SOURCE + """
 - ADA (2014) targets as quoted in Seborg Sec. 23.2.
 """)
